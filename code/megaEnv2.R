@@ -58,7 +58,7 @@ for(year in (burninYears+1):nCycles){# nCycles=burninYears+futureYears
                   fixEff=year, simParam=SP)
 
   # select new parents for crossing (50)
-  parents <- selectInd(pop=c(CET), nInd=nInd(parents), use="ebv")
+  parents <- selectInd(pop=c(UYT,AYT), nInd=nInd(parents), use="ebv")
   F1 <- randCross(pop=parents, nCrosses=100, nProgeny=nProgeny,
                   simParam=SP)
 
@@ -68,7 +68,7 @@ for(year in (burninYears+1):nCycles){# nCycles=burninYears+futureYears
 
   # Update training population and genomic prediction model
   # by retaining the last 2 year of training data
-  trainPop <-  c(trainPop[-(1:nInd(c(CET, PYT,AYT)))],c(CET,PYT,AYT))
+  trainPop <-  c(trainPop[-(1:nInd(c(CET, PYT,AYT,UYT)))],c(CET,PYT,AYT,UYT))
   gsModel <- RRBLUP(pop=trainPop, traits=1, simParam=SP)
 
 }

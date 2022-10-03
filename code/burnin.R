@@ -79,9 +79,9 @@ for(year in 1:burninYears){#Change to any number of desired years
   # records. The number of years retained is set with "limityear" in GlobalParameters.
 
   if(year == startTrainPop){
-    trainPop = c(CET, PYT, AYT)
+    trainPop = c(CET, PYT, AYT, UYT)
   } else if(year > startTrainPop && year <= burninYears){
-    trainPop = c(trainPop, CET, PYT, AYT)
+    trainPop = c(trainPop, CET, PYT, AYT, UYT)
   }
 
   meanGV[year] <- meanG(PYT)

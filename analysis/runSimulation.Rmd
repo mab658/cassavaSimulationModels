@@ -199,7 +199,6 @@ simSumm$scenario <- factor(simSumm$scenario,levels = c("Conv","Broad adaptation"
 # plot of mean genetic value
 
 ```{r}
-getwd()
 gGainPlot <- ggplot(data=simSumm,aes(x=year,y=gainMean,color=scenario))+
   geom_point()+
   geom_line(size=1)+
@@ -220,8 +219,7 @@ ggsave("../output/geneticGain.jpeg",height=4.2, width=6.5, units="in", dpi=300)
 # plot of mean relative variance of genetic value
 
 ```{r}
-varGplot <- ggplot(data=simSumm,aes(x=year,y=relVarMean,color=scenario))+
-  geom_point()+
+varGplot <- ggplot(data=simSumm,aes(x=year,y=relVarMean,color=scenario))+ geom_point()+
   geom_line(size=1)+
   guides(scale="none")+
   theme_bw()+

@@ -15,9 +15,6 @@ for(year in (burninYears+1):nCycles){
                 varE=errVarUYT, nreps=repUYT,
                 scenario="Conv", locSize=10)
 
-
-  #variety <- selectInd(UYT,nInd=nVarietySel, use="pheno")
-
   # Year 4 Advance Yield Trial (AYT)
   AYT = selectInd(pop=PYT, nInd=nAYT, use="pheno")
 
@@ -51,7 +48,7 @@ for(year in (burninYears+1):nCycles){
 
 
   # Update and recycle parents in the crossing block
-  parents <- selectInd(pop=c(UYT,AYT,PYT),nInd=50, use="pheno")
+  parents <- selectInd(pop=c(UYT,AYT),nInd=50, use="pheno")
 
   # Crossing block - Make crosses to generate new population
   F1 <- randCross(pop=parents, nCrosses=nCrosses,

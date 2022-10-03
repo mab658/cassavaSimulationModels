@@ -39,7 +39,7 @@ repUYT <- 4
 
 ### Genomic selection parameters
 #Start  training population historical records  of 3 years
-startTrainPop <- 7
+startTrainPop <- 8
 #Sliding window year limitation => no. of historical records to keep
 # after limit year of say 3 then remove old records
 limityear <- burninYears - (startTrainPop - 1) #do not change

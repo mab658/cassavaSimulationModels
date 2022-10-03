@@ -3,7 +3,6 @@
 # i.e. Create haplotypes sequence for founder population of 50 outbred
 # individuals to mimic crop evolution
 
-#library(AlphaSimR)
 founderPop <- runMacs2(nInd=50,
                        nChr=18,
                        segSites=nQTL+nSNP,
@@ -67,4 +66,4 @@ SP$addTraitADG(nQtlPerChr=nQTL, mean=0, var=1,
 # being from same founders population
 
 # begining of modeling the breeding program
-parents <- newPop(founderPop, simParam = SP)
+parents <- newPop(founderPop, simParam=SP)

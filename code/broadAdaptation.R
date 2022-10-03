@@ -2,9 +2,7 @@
 # This script implemented broad adaptation  breeding programs
 # with genomic selection at CET to boost the selection accuracy
 # without changing the generation interval
-#library(dplyr)
-#library(tibble)
-#library(rrBLUP)
+
 
 # Train genomic selection (GS) model and safe the model fit
 gsModel <- RRBLUP(pop=trainPop, traits=1, simParam=SP)
@@ -14,6 +12,7 @@ gsModel <- RRBLUP(pop=trainPop, traits=1, simParam=SP)
 CET = setEBV(pop=CET, solution=gsModel)
 PYT = setEBV(pop=PYT, solution=gsModel)
 AYT = setEBV(pop=AYT, solution=gsModel)
+UYT = setEBV(pop=UYT, solution=gsModel)
 
 for(year in (burninYears+1):nCycles){# nCycles=burninYears+futureYears
 
@@ -85,7 +84,7 @@ for(year in (burninYears+1):nCycles){# nCycles=burninYears+futureYears
   # generation interval
 
   # select new parents (50) based on gebv from CET
-  parents <- selectInd(pop=CET, nInd=nInd(parents), use="ebv")
+  parents <- selectInd(pop=c(UYT,AYT), nInd=nInd(parents), use="ebv")
   F1 <- randCross(pop=parents, nCrosses=nCrosses, nProgeny=nProgeny,
                   simParam=SP)
 
@@ -95,7 +94,7 @@ for(year in (burninYears+1):nCycles){# nCycles=burninYears+futureYears
 
   # Update training population and genomic prediction model
   # by retaining the last 2 year of training data
-  trainPop <-  c(trainPop[-(1:nInd(c(CET, PYT,AYT)))],c(CET,PYT,AYT))
+  trainPop <-  c(trainPop[-(1:nInd(c(CET, PYT,AYT,UYT)))],c(CET,PYT,AYT,UYT))
   gsModel <- RRBLUP(pop=trainPop, traits=1, simParam=SP)
 }
 

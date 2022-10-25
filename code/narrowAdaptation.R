@@ -3,7 +3,7 @@
 # This script implemented narrow adaptation breeding program
 # by breeding for two separate breeding programs
 
-megaEnv <- c("ME1","ME2") # vector of two mega-environments
+#megaEnv <- c("ME1","ME2") # vector of two mega-environments
 
 splitTrainPop <- splitGen(trainPop) # split training population into 2 for MEs
 

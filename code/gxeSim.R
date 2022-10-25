@@ -1,18 +1,18 @@
 # function to simulate GxE at UYT trials
-gxeSim <- function(pval1,pval2,genPop,varE,nreps,scenario,locSize){
+gxeSim <- function(pval1,pval2,pop,varE,nreps,locSize){
 
-  GV = matrix(0, nrow=nInd(genPop), ncol=locSize)
-  dimnames(GV)<- list(genPop@id,paste(paste0("L",1:locSize)))
+  GV = matrix(0, nrow=nInd(pop), ncol=locSize)
+  dimnames(GV)<- list(pop@id,paste(paste0("L",1:locSize)))
 
-  # A p-value of the environmental covariate
-  P <- seq(pval1, pval2, length.out=locSize)
+  # A P-value of the environmental covariate
+  P <- round(seq(pval1, pval2, length.out=locSize),1)
 
   for (loc in 1:locSize){  # begin loop
-    GV[,loc] = setPheno(pop=genPop, varE=varE, reps=nreps,
-                        p=P[loc],onlyPheno=TRUE, simParam=SP)
+    GV[,loc] = setPheno(pop=pop, varE=varE, reps=nreps,
+                        p=P[loc], fixEff=year, onlyPheno=TRUE, simParam=SP)
   } #end loop
 
-  genPop@pheno <- as.matrix(rowMeans(GV))
+  pop@pheno <- as.matrix(rowMeans(GV))
 
-  return(genPop)
+  return(pop)
 }

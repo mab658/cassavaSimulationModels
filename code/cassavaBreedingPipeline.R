@@ -1,6 +1,6 @@
 # Fill/populate  cassava breeding program pipeline with unique individuals from
-# initial founder parents. This is required to initiate a breeding program
-# by populating each breeding stage with genotypes from the same generation
+# This is required to initiate a breeding program by populating each
+# breeding stage with genotypes from the same generation.
 
 # In a real breeding program, there are generation difference
 # This generation difference will be created later in future testing phase
@@ -36,38 +36,37 @@ for (year in 1:7){
   # Year 1: Beginning of breeding cycle-
   # Seedling nursery evaluates  the seeds (F1) population
   if (year < 7){
-    SDN <- F1
-    SDN <- setPheno(pop=SDN, varE=errVarSDN,reps=repSDN,simParam=SP)
+    SDN <- setPheno(pop=F1, varE=errVarSDN,reps=repSDN,simParam=SP)
   }
 
   # year 2  Stage 1 - clonal evaluation trial (CET)
   if (year < 6){
-    CET <- selectWithinFam(pop=SDN, nInd=famSize, use="pheno")
-    CET <- selectInd(pop=CET, nInd=nCET, use="pheno")
+    CET <- selectWithinFam(pop=SDN, nInd=famSize, use="pheno",simParam=SP)
+    CET <- selectInd(pop=CET, nInd=nCET, use="pheno",simParam=SP)
     CET <-  setPheno(pop=CET, varE=errVarCET, reps=repCET,simParam=SP)
   }
 
   # year 3 - Preliminary Yield Trial (PYT)
   if (year < 5){
-    PYT <- selectInd(pop=CET,nInd=nPYT,use="pheno")
-    PYT <-  setPheno(pop=PYT,varE=errVarPYT,reps=repPYT,simParam=SP)
+    PYT <- selectInd(pop=CET,nInd=nPYT,use="pheno", simParam=SP)
+    PYT <-  setPheno(pop=PYT,varE=errVarPYT,reps=repPYT, simParam=SP)
   }
 
   # year 4 - Advanced Yield Trial (AYT)
   if (year < 4){
-    AYT <-  selectInd(pop=PYT, nInd = nAYT, use="pheno")
+    AYT <-  selectInd(pop=PYT, nInd = nAYT, use="pheno", simParam=SP)
     AYT <-   setPheno(pop=AYT,varE=errVarAYT, reps=repAYT,simParam=SP)
   }
 
   # year 5 - Uniform Yield Trial I (UYT1)
   if (year < 3){
-    UYT <- selectInd(pop=AYT,nInd=nUYT, use="pheno")
+    UYT <- selectInd(pop=AYT,nInd=nUYT, use="pheno", simParam=SP)
     UYT <- setPheno(pop=UYT, varE=errVarUYT, reps=repUYT,simParam=SP)
   }
 
   # year 6 - variety release
   if (year < 2){
     # selecting variety
-    variety <- selectInd(pop=UYT,nInd=nVarietySel, use="pheno")
+    variety <- selectInd(pop=UYT,nInd=nVarietySel, use="pheno",simParam=SP)
   }
 } # end loop breeding cycle of cassava

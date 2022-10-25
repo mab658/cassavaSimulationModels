@@ -1,12 +1,12 @@
 # Simulate founder genomes and define trait genetic architecture
 # from coalescent simulator called runMac2
-# i.e. Create haplotypes sequence for founder population of 50 outbred
+# i.e. Create haplotypes sequence genomes for founder population of 50 outbred
 # individuals to mimic crop evolution
 
-founderPop <- runMacs2(nInd=50,
+founderGenomes <- runMacs2(nInd=50,
                        nChr=18,
                        segSites=nQTL+nSNP,
-                       Ne = 100,
+                       Ne = 50,
                        bp=8e+08, # physical length (bp)
                        genLen=1.43, # genetic length (M)
                        mutRate = 2e-09,
@@ -22,14 +22,14 @@ founderPop <- runMacs2(nInd=50,
 # bp = SNPs Physical position or length on the chromosomes of 8 x 108 base pairs
 
 # Create an object (SP) holding the global simulation parameters
-# for founder haplotypes population
+# for founder haplotypes sequences genomes
 # this set the genotype to phenotype mapping
-SP <- SimParam$new(founderPop)
+SP <- SimParam$new(founderGenomes)
 
 # Sets restrictions on which segregating sites
 # can serve as SNP or QTL
 # `restrSegSites prevents SNP from also being QTL
-SP$restrSegSites(nQTL, nSNP, overlap = FALSE)
+SP$restrSegSites(nQTL, nSNP, overlap = FALSE) # maxQTL=nQTL and maxSNp=nSNP
 
 # add SNPs chip for all simulated SNPS markers in the population
 # SNPs are generally described by the number of SNP position the assay
@@ -54,16 +54,16 @@ SP$addTraitADG(nQtlPerChr=nQTL, mean=0, var=1,
               meanDD=ddMean,varDD=ddVar,
               varEnv=0,varGxE=0.5)
 
-#SP$setTrackRec(TRUE) # keep track records
+SP$setTrackRec(TRUE) # keep track records
 
 # Model the trait with a broad-sense heritability of 0.3
 # for evaluation in a single location
 #SP$setVarE(H2 = 0.30)
 
-# select the first initial base parental population from founder population
+# create initial parental base population from founder genomes
 # from which unique individuals in each evaluation stage are generated
 # All the parents are effective the same generation
-# being from same founders population
+# being from same founder genomes
 
 # begining of modeling the breeding program
-parents <- newPop(founderPop, simParam=SP)
+parents <- newPop(founderGenomes, simParam=SP)

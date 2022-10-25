@@ -1,82 +1,70 @@
-# Alternative breeding scenario one
+# Scenario 1
 # This script implemented broad adaptation  breeding programs
-# with genomic selection at CET to boost the selection accuracy
-# without changing the generation interval
+# with GS to estimate BV in CET based on genomic data to boost 
+# the selection accuracy at this early stage where phenotype 
+# information is limited
+# GS is used to advance from CET, PYT, AYT, and UYT
 
 
 # Train genomic selection (GS) model and safe the model fit
-gsModel <- RRBLUP(pop=trainPop, traits=1, simParam=SP)
+gsModel <- RRBLUP(pop=trainPop, traits=1, use="pheno", simParam=SP)
 
-# Estimate breeding values for CET, PYT, and AYT for being used to
+# Estimate BVs for CET, PYT, AYT, and UYT for being used to
 # constitute the training population set and they are genotyped
 CET = setEBV(pop=CET, solution=gsModel)
 PYT = setEBV(pop=PYT, solution=gsModel)
 AYT = setEBV(pop=AYT, solution=gsModel)
 UYT = setEBV(pop=UYT, solution=gsModel)
 
-for(year in (burninYears+1):nCycles){# nCycles=burninYears+futureYears
-
+for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
   cat("Advancing breeding with broad-adaptation program
       strategy year:",year,"of", nCycles, "\n")
 
   # Selecting variety for release
-  variety <- selectInd(UYT,nInd=nVarietySel, use="pheno")
+  variety <- selectInd(UYT,nInd=nVarietySel, use="ebv")
 
   # Advance year of breeding for genomic selection
   # Year 5 Uniform yield trial  (UYT)
-  UYT <- selectInd(pop=AYT,  nInd=nUYT, use="pheno", simParam=SP)
+  UYT <- selectInd(pop=AYT,  nInd=nUYT, use="ebv", simParam=SP)
 
   # Invoke the function to phenotype selected UYT clones in 10 locations
-  UYT <- gxeSim(pval1=0.05, pval2=0.95, genPop=UYT,
-                varE=errVarUYT, nreps=repUYT,
-                scenario="Broad adaptation",locSize=10)
-
-
-  # Year 4 Advance Yield Trial (AYT)
-  AYT = selectInd(pop=PYT, nInd=nAYT,use="pheno")
+  UYT <- gxeSim(pval1=0.1, pval2=0.9, pop=UYT,
+                varE=errVarUYT, nreps=repUYT,locSize=8)
+  
+  UYT <- setEBV(UYT, gsModel) # estimate GEBV for the CET lines
+  
+  
+  # Advance Yield Trial (AYT)
+  AYT = selectInd(pop=PYT, nInd=nAYT,use="ebv")
 
   # Invoke the function to phenotype selected AYT clones in 4 locations
-  AYT <- gxeSim(pval1=0.35, pval2=0.65, genPop=AYT,
-                varE=errVarAYT, nreps=repAYT,
-                scenario="Broad adaptation", locSize=4)
+  AYT <- gxeSim(pval1=0.3, pval2=0.7,pop=AYT,
+                varE=errVarAYT, nreps=repAYT,locSize=4)
+  
+  AYT <- setEBV(AYT, gsModel) # estimate GEBV for the CET lines
 
-
-  # select the best PYT lines based on estimated breeding values (EBV)
-  # from the phenotyped and genotyped evaluated CET lines
-
-  # Year 3 Preliminary  Yield  Trial (PYT)
+  # Preliminary  Yield  Trial (PYT)
   PYT = selectInd(pop=CET, nInd=nPYT, use="ebv")
 
   # Invoke the function to phenotype selected PYT clones in 2 locations
-  PYT <- gxeSim(pval1=0.45, pval2=0.55, genPop=PYT,
-                varE=errVarPYT, nreps=repPYT,
-             scenario="Broad adaptation", locSize=2)
+  PYT <- gxeSim(pval1=0.3, pval2=0.7, pop=PYT,
+                varE=errVarPYT, nreps=repPYT, locSize=2)
+  
+  PYT <- setEBV(PYT, gsModel) # estimate GEBV for the CET lines
 
 
-  # Year 2 Clonal Evaluation Trial (CET) - Implement GS
-
+  # Clonal Evaluation Trial (CET) - Implement GS
   # Select individuals from the SDN stage based on phenotype performance
 
   CET <- selectWithinFam(pop=SDN, nInd=famSize, use="pheno")
   CET <- selectInd(pop=CET, nInd=nCET, simParam=SP)
+  CET <- setPheno(pop=CET, varE=errVarCET, reps=repCET,
+                  p=0.5, simParam=SP)
 
-  # Invoke the function to phenotype selected CET clones in 1 locations
-  CET <- gxeSim(pval1=0.45, pval2=0.45, genPop=CET,
-                varE=errVarCET, nreps=repCET,
-             scenario="Broad adaptation", locSize=1)
+  CET <- setEBV(CET, gsModel) # estimate GEBV for the CET lines
 
-  CET = setEBV(CET, gsModel) # estimate breeding values for the CET lines
-
-  # Evaluate accuracy of selection based on phenotype values
-  accPheno[year] = cor(gv(PYT), pheno(PYT))
-  # Evaluate accuracy of selection based on genomic EBV
-  accEbv[year] = cor(gv(PYT), ebv(PYT))
-
-
-  # Year 1  Seedling Nursery
-  SDN <- F1
-  SDN <- setPheno(pop=SDN, varE=errVarSDN, reps=repSDN, p=0.45,
-                  fixEff=year, simParam=SP)
+  # Seedling Nursery
+  SDN <- setPheno(pop=F1, varE=errVarSDN, reps=repSDN, p=0.5, simParam=SP)
 
   # recycle new Parents
   # We will use gebv  to select parents among
@@ -84,18 +72,25 @@ for(year in (burninYears+1):nCycles){# nCycles=burninYears+futureYears
   # generation interval
 
   # select new parents (50) based on gebv from CET
-  parents <- selectInd(pop=c(UYT,AYT), nInd=nInd(parents), use="ebv")
+  parents <- selectInd(pop=CET, nInd=nInd(parents), use="ebv")
   F1 <- randCross(pop=parents, nCrosses=nCrosses, nProgeny=nProgeny,
                   simParam=SP)
 
   # report the result
   meanGV[year] <- meanG(PYT)
   varGV[year] <- varG(PYT)
+  
+  # Selection accuracy at each evaluation stage
+  accCET[year] <-  cor(gv(CET), ebv(CET))
+  accPYT[year] <-  cor(gv(PYT), ebv(PYT))
+  accAYT[year] <-  cor(gv(AYT), ebv(AYT))
+  accUYT[year] <-  cor(gv(UYT), ebv(UYT))
+  
 
   # Update training population and genomic prediction model
   # by retaining the last 2 year of training data
   trainPop <-  c(trainPop[-(1:nInd(c(CET, PYT,AYT,UYT)))],c(CET,PYT,AYT,UYT))
-  gsModel <- RRBLUP(pop=trainPop, traits=1, simParam=SP)
+  gsModel <- RRBLUP(pop=trainPop, traits=1, use="pheno",simParam=SP)
 }
 
 gGain <- meanGV - meanGV[burninYears]
@@ -108,8 +103,11 @@ simParms <- data.frame(simRun=rep(REP,nCycles),
                      varGV=varGV,
                      gGain=gGain,
                      relVar=relVar,
-                     accuracy=accEbv)
+                     accCET=accCET,
+                     accPYT=accPYT,
+                     accAYT=accAYT,
+                     accUYT=accUYT)
 
-write.csv(simParms,file = paste0("../data/broadGxE_parms","_",REP,".csv"),row.names = FALSE)
+write.csv(simParms,file = paste0("./data/broadGxE_parms","_",REP,".csv"),row.names = FALSE)
 
 #saveRDS(result,file = paste0("simulated_data/PYT_GS","_",REP,".rds"))

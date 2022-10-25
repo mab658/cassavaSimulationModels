@@ -10,11 +10,11 @@ megaEnv <- function(pval1UYT,pval2UYT,
     UYT <<- selectInd(pop=AYT,  nInd=nUYT, 
                       use="ebv", simParam=SP)
     
-    # Invoke the function to phenotype selected UYT clones in 5 locations
+    # Invoke the function to phenotype selected UYT clones in 4 locations
     #pval1=0.05
     UYT <- gxeSim(pval1=pval1UYT,pval2=pval2UYT,pop=UYT,
                   varE=errVarUYT, nreps=repUYT,
-                  locSize=5)
+                  locSize=4)
     
     UYT <- setEBV(UYT, gsModel)
     

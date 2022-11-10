@@ -77,5 +77,5 @@ simParms <- data.frame(simRun=rep(REP,nCycles),
                        accAYT=accAYT,
                        accUYT=accUYT)
 
-write.csv(simParms,file = paste0("./data/conv","_",REP,".csv"),row.names = FALSE)
+#write.csv(simParms,file = paste0("./data/conv","_",REP,".csv"),row.names = FALSE)
 #saveRDS(output,file = paste0("simulated_data/Base","_",REP,".rds"))

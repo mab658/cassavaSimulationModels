@@ -1,5 +1,5 @@
 megaEnv <- function(pval1UYT,pval2UYT,
-                    pval1AYT, pval2AYT,
+                    pval1AYT,pval2AYT,
                     pvalPYT,pvalCET,pvalSDN){
   
   for(year in (burninYears+1):nCycles){
@@ -7,16 +7,15 @@ megaEnv <- function(pval1UYT,pval2UYT,
                          use="ebv",simParam=SP)
     
     # Uniform Yield Trial (UYT)
-    UYT <<- selectInd(pop=AYT,  nInd=nUYT, 
+    UYT <- selectInd(pop=AYT, nInd=nUYT, 
                       use="ebv", simParam=SP)
     
     # Invoke the function to phenotype selected UYT clones in 4 locations
-    #pval1=0.05
-    UYT <- gxeSim(pval1=pval1UYT,pval2=pval2UYT,pop=UYT,
+    UYT <- gxeSim(pval1=pval1UYT,pval2=pval2UYT, pop=UYT,
                   varE=errVarUYT, nreps=repUYT,
                   locSize=4)
     
-    UYT <- setEBV(UYT, gsModel)
+    UYT <- setEBV(UYT, solution=gsModel,simParam=SP)
     
     
     #  Advance Yield Trial (AYT)
@@ -29,7 +28,7 @@ megaEnv <- function(pval1UYT,pval2UYT,
                   locSize=2)
     
     # estimate breeding values for AYT
-    AYT <- setEBV(AYT, gsModel)
+    AYT <- setEBV(AYT, solution=gsModel,simParam=SP)
     
     
     # Year 3 Preliminary  Yield  Trial (PYT)
@@ -39,7 +38,7 @@ megaEnv <- function(pval1UYT,pval2UYT,
                     p=pvalPYT, simParam=SP)
     
     # estimate breeding values for CET
-    PYT <- setEBV(PYT, gsModel)
+    PYT <- setEBV(PYT, solution=gsModel,simParam=SP)
     
     # Clonal evaluation trial (CET)
     # Select individuals from the SDN stage based on phenotype performance
@@ -51,7 +50,7 @@ megaEnv <- function(pval1UYT,pval2UYT,
                     p=pvalCET, simParam=SP)
     
     # estimate breeding values for CET
-    CET <- setEBV(CET, gsModel)
+    CET <- setEBV(CET, gsModel,simParam=SP)
     
     
     # seedling nursery
@@ -59,7 +58,11 @@ megaEnv <- function(pval1UYT,pval2UYT,
                     p=pvalSDN,simParam=SP)
     
     # select new parents for crossing (50)
-    parents <- selectInd(pop=CET, nInd=nInd(parents), use="ebv",simParam=SP)
+    # select new parents (50) based on gebv from CET
+    parSelCand <- c(UYT,AYT,PYT,CET)
+    parSelCand <- setEBV(pop=parSelCand, solution=gsModel,simParam=SP)
+     parents <- selectInd(pop=parSelCand, nInd=nInd(parents), use="ebv",simParam=SP)    
+
     
     F1 <- randCross(pop=parents, nCrosses=100, 
                     nProgeny=nProgeny,
@@ -78,7 +81,7 @@ megaEnv <- function(pval1UYT,pval2UYT,
     # Update training population and genomic prediction model
     # by retaining the last 2 year of training data
     trainPop <-  c(trainPop[-(1:nInd(c(CET,PYT,AYT,UYT)))],c(CET,PYT,AYT,UYT))
-    gsModel <- RRBLUP(pop=trainPop, traits=1,use="pheno", simParam=SP)
+    gsModel <- RRBLUP_D2(pop=trainPop, traits=1,use="pheno", simParam=SP)
   } # end loop
   
   gGain <- meanGV - meanGV[burninYears]
@@ -95,5 +98,6 @@ megaEnv <- function(pval1UYT,pval2UYT,
                          accPYT=accPYT,
                          accAYT=accAYT,
                          accUYT=accUYT)
-  return(simParms)
+  #return(simParms)
 } # end function
+

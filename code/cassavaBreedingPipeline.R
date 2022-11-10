@@ -20,7 +20,6 @@
 
 cat("Fill cassava breeding scheme pipeline", "\n")
 
-#P = runif(5) #p-values for GxY effect
 
 for (year in 1:7){
 
@@ -52,21 +51,21 @@ for (year in 1:7){
     PYT <-  setPheno(pop=PYT,varE=errVarPYT,reps=repPYT, simParam=SP)
   }
 
-  # year 4 - Advanced Yield Trial (AYT)
+  # Advanced Yield Trial (AYT)
   if (year < 4){
     AYT <-  selectInd(pop=PYT, nInd = nAYT, use="pheno", simParam=SP)
     AYT <-   setPheno(pop=AYT,varE=errVarAYT, reps=repAYT,simParam=SP)
   }
 
-  # year 5 - Uniform Yield Trial I (UYT1)
+  #  Uniform Yield Trial I (UYT1)
   if (year < 3){
     UYT <- selectInd(pop=AYT,nInd=nUYT, use="pheno", simParam=SP)
     UYT <- setPheno(pop=UYT, varE=errVarUYT, reps=repUYT,simParam=SP)
   }
 
-  # year 6 - variety release
+  #  - variety release
   if (year < 2){
-    # selecting variety
+    # selecting variety for release
     variety <- selectInd(pop=UYT,nInd=nVarietySel, use="pheno",simParam=SP)
   }
 } # end loop breeding cycle of cassava

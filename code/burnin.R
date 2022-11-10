@@ -14,14 +14,8 @@ varGV <- vector("numeric",length=nCycles)
 
 accCET <- accPYT <- accAYT <- accUYT <- vector("numeric",length=nCycles)
 
-
-#prentMean <- parentVar <- PYTMean <- PYTVar <-  matrix(NA, nrow = nCycles, ncol = 1)
-
-# p-values for breeding cycles in burnin and future breeding phase
-#P = runif(nCycles)
-
 # Run 10 years of burn-in (Cycle years) as a common starting point
-#- for different scenarios.
+# for different scenarios.
 # This marks the beginning of a new breeding cycle where new parents are
 # formed and taking to crossing block
 
@@ -62,7 +56,7 @@ for(year in 1:burninYears){#Change to any number of desired years
 
   # Seedling Nursery
   SDN <- setPheno(pop=F1, varE=errVarSDN,reps=repSDN,
-                  fixEff=year,p=0.5, simParam=SP)
+                  p=0.5, simParam=SP)
 
   # recycle new parents in each year of burn-in phase
   # by selecting best individuals from joint (UYT and AYT) population
@@ -97,7 +91,7 @@ for(year in 1:burninYears){#Change to any number of desired years
     trainPopME2 <- c(splitCET$ME2,PYT, AYT, UYT)
   } else if(year > startTrainPop && year <= burninYears){
     
-    # update TP for year 9 and 10 of burnin phase
+    # update TP from year 9 to  10 of burnin phase
     trainPop = c(trainPop, CET, PYT, AYT, UYT) # TP broad adaptation
 
     splitCET <- splitPop(CET) # split TP set for ME1 and ME2
@@ -107,7 +101,8 @@ for(year in 1:burninYears){#Change to any number of desired years
   }
 } # end 10-year burn-in
 
-# Save burn-in phase as global environment for each simulation run
-# to  be loaded later for other scenarios
+# Save the state of simulation at final year=10 of  burn-in phase as global environment 
+# for each simulation replicate. This will be loaded for other scenarios
+
 cat(paste0("saving burn-in for REP ", REP, "\n"))
 save.image(paste0("./data/burnin_",REP,".rda"))

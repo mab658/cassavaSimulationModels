@@ -1,4 +1,4 @@
-# Fill/populate  cassava breeding program pipeline with unique individuals from
+# Fill/populate  cassava breeding program pipeline with unique individuals from founder population
 # This is required to initiate a breeding program by populating each
 # breeding stage with genotypes from the same generation.
 
@@ -10,13 +10,12 @@
 # parents are recycle
 
 # year 1  crossing
-# year 1 - seedling
-# year 2 - clonal evaluation
-# year 3 - Preliminary Yield Trial
-# year 4 - Advance Yield Trial
-# year 5 - Uniform Yield Trial 1
-# year 6 - Uniform Yield Trial 2
-# - Variety release
+# year 2 - seedling
+# year 3 - clonal evaluation
+# year 4 - Preliminary Yield Trial
+# year 5 - Advance Yield Trial
+# year 6 - Uniform Yield Trial
+# year 7 - Variety release
 
 cat("Fill cassava breeding scheme pipeline", "\n")
 
@@ -25,7 +24,7 @@ for (year in 1:7){
 
   cat("CassavaBreedingPipeline year:",year,"of 7\n")
 
-  # Year 1 - crossing block
+  # Year 1 - generate F1 in the crossing block
   # make nCrosses=200 bi-parental crosses with
   # nProgeny=50 progeny each to generate F1 population
 
@@ -34,6 +33,7 @@ for (year in 1:7){
 
   # Year 1: Beginning of breeding cycle-
   # Seedling nursery evaluates  the seeds (F1) population
+ 
   if (year < 7){
     SDN <- setPheno(pop=F1, varE=errVarSDN,reps=repSDN,simParam=SP)
   }
@@ -51,13 +51,13 @@ for (year in 1:7){
     PYT <-  setPheno(pop=PYT,varE=errVarPYT,reps=repPYT, simParam=SP)
   }
 
-  # Advanced Yield Trial (AYT)
+  # year 4 - Advanced Yield Trial (AYT)
   if (year < 4){
     AYT <-  selectInd(pop=PYT, nInd = nAYT, use="pheno", simParam=SP)
     AYT <-   setPheno(pop=AYT,varE=errVarAYT, reps=repAYT,simParam=SP)
   }
 
-  #  Uniform Yield Trial I (UYT1)
+  #  year 5 - Uniform Yield Trial I (UYT1)
   if (year < 3){
     UYT <- selectInd(pop=AYT,nInd=nUYT, use="pheno", simParam=SP)
     UYT <- setPheno(pop=UYT, varE=errVarUYT, reps=repUYT,simParam=SP)

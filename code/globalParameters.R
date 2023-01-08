@@ -1,11 +1,12 @@
 # Define global parameters required for simulation running
 
-nSimRun <- 50 #Number of replications of simulation
+nSimRun <- 10  # Number of simulation repetitions
 burninYears <- 10 # length of common burn-in phase
 futureYears <- 10 # length of testing period for future phase
 nCycles <- burninYears+futureYears # Number of breeding cycles
 
 # Define parameter for the crossing block
+nParents <- 50
 nCrosses <- 200 # number of crosses to be 200
 nProgeny <- 50 # number of progeny per cross
 famSize <- 5 # selected individuals per family or cross
@@ -13,7 +14,7 @@ nVarietySel <- 4 # Number of variety released
 
 # Number of causal sites (QTL) and SNP per each of 18  chrom
 nQTL <- 300 # 18 Chrs x 300 QTLs = 5400 sites with effect
-nSNP <- 700
+nSNP <- 1000
 
 # mean and variance Degree of dominance
 # contributes to inbreeding depression and dominance variance
@@ -22,6 +23,11 @@ ddMean <- 0.20
 # - contribute to dominance variance but not inbreeding depression
 ddVar <- 0.10 # Variance dominance degree 
 
+# Different scenario of GxE variance
+#varGE <- 0.0
+varGE <- 0.2
+#varGE <- 0.5
+#varGE <- 10 
 
 # number of entries per each trial evaluation stages
 #nSDN <- 10000
@@ -29,7 +35,6 @@ nCET <- 1000
 nPYT <- 200
 nAYT <- 60
 nUYT <- 30
-
 
 # In AlphaSimR context,number of replicates (rep) is synonymous to the
 # number of locations for each evaluation stage
@@ -42,10 +47,10 @@ repUYT <- 3
 ### Genomic selection parameters
 #Start  training population historical records  of 5 years
 
-startTrainPop <- 8
+startTrainPop <- 6
 
 #Sliding window year limitation => no. of historical records to keep
-# after limit year of 3 then remove old records
+# after limit year of 5 then remove old records
 limityear <- burninYears - (startTrainPop - 1) #do not change
 
 # Estimate mean error from historical data for each yield trial stages

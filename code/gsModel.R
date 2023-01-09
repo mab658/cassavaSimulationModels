@@ -17,12 +17,12 @@ gsModel <- function(snpsMarker,datName){
   Gb <- G.tuneup(G=Gmat, bend=TRUE, eig.tol = 1e-03)$Gb # Bend the Gmat matrix
 
   # get the inverse of bended genomic relationship matrix
-  Ginv <<- G.inverse(G = Gb, sparseform = TRUE)$Ginv
+  kinv <<- G.inverse(G = Gb, sparseform = TRUE)$Ginv
 
   # Train genomic selection (GS) model and safe the model fit
 
   modelFit <- asreml(fixed=pheno~1,
-                        random=~vm(id,Ginv),
+                        random=~vm(id,kinv),
                         residual=~units,
                         weights= wt,
                         na.action=na.method(y="include"),

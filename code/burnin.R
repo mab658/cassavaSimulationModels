@@ -21,8 +21,7 @@ simRun <- vector("numeric",length=nCycles)
 meanGV <- vector("numeric",length=nCycles)
 varGV <- vector("numeric",length=nCycles)
 
-accCET <<- accPYT <<- accAYT <<- accUYT <<- vector("numeric",length=nCycles)
-#accCET <- accPYT <- accAYT <- accUYT <- vector("numeric",length=nCycles)
+accCET <- accPYT <- accAYT <- accUYT <- vector("numeric",length=nCycles)
 
 # pipeline  to avoid copying data
 
@@ -64,6 +63,8 @@ for(year in 1:burninYears){#Change to any number of desired years
   PYTrec <- gxeSim(pval1=0.3, pval2=0.7, pop=PYT,
                 varE=errVarPYT,nreps=repPYT,nLocs=2)
   PYT <- PYTrec[[1]]
+
+
 
   #  Clonal Evaluation Trial (CET)
   CET <- selectWithinFam(pop=SDN, nInd=famSize, use="pheno", simParam=SP)

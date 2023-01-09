@@ -7,17 +7,16 @@ for(year in (burninYears+1):nCycles){
   # select the best variety for release
 
   # Selection accuracy
-  #accUYT[year] <-  cor(gv(UYT), pheno(UYT))
+  accUYT[year] <-  cor(gv(UYT), pheno(UYT))
   variety <- selectInd(pop=UYT,nInd=nVarietySel, use="pheno",simParam=SP)
 
+  
   # Uniform Yield Trial (UYT)
 
-# Selection accuracy
-  # accAYT[year] <-  cor(gv(AYT), pheno(AYT))
+  # Selection accuracy
+  accAYT[year] <-  cor(gv(AYT), pheno(AYT))
   UYT <- selectInd(pop=AYT, nInd=nUYT, use="pheno",simParam=SP)
   
-  # accUYT[year] <-  cor(gv(UYT), pheno(UYT))
-
   # Invoke the function to phenotype selected UYT clones in 10 locations
   UYTrec <- gxeSim(pval1=0.1, pval2=0.9, pop=UYT,
                 varE=errVarUYT, nreps=repUYT,
@@ -26,12 +25,11 @@ for(year in (burninYears+1):nCycles){
   UYT <- UYTrec[[1]]
 
   # Selection accuracy
-  # accPYT[year] <-  cor(gv(PYT), pheno(PYT))
+  accPYT[year] <-  cor(gv(PYT), pheno(PYT))
 
   # Advance Yield Trial (AYT)
   AYT <-  selectInd(pop=PYT, nInd=nAYT, use="pheno",simParam=SP)
 
-   #accAYT[year] <-  cor(gv(AYT), pheno(AYT))
   # Invoke the function to phenotype selected AYT clones in 4 locations
   AYTrec <- gxeSim(pval1=0.3, pval2=0.7, pop=AYT,
                 varE=errVarAYT, nreps=repAYT,nLocs=4)
@@ -39,12 +37,10 @@ for(year in (burninYears+1):nCycles){
   AYT <- AYTrec[[1]]
 
   # Selection accuracy
-  # accCET[year] <-  cor(gv(CET), pheno(CET))
+   accCET[year] <-  cor(gv(CET), pheno(CET))
   
   # Preliminary  Yield  Trial (PYT)
   PYT <- selectInd(pop=CET, nInd=nPYT, use="pheno",simParam=SP)
-
-  # accPYT[year] <-  cor(gv(PYT), pheno(PYT))
 
   # Invoke the function to phenotype selected PYT clones in 2 locations
   PYTrec <- gxeSim(pval1=0.3, pval2=0.7, pop=PYT,
@@ -55,20 +51,10 @@ for(year in (burninYears+1):nCycles){
 
   # Clonal Evaluation Trial (CET)
   CET <- selectWithinFam(pop=SDN, nInd=famSize, use="pheno", simParam=SP)
-
-  #accCET[year] <-  cor(gv(CET), pheno(CET))
-
   CETrec <- gxeSim(pval1=0.5, pval2=0.5, pop=CET,
                 varE=errVarCET,nreps=repCET,nLocs=1)
 
   CET <- CETrec[[1]]
-
-# Selection accuracy
-  accUYT[year] <-  cor(gv(UYT), pheno(UYT))
-  accAYT[year] <-  cor(gv(AYT), pheno(AYT))
-  accPYT[year] <-  cor(gv(PYT), pheno(PYT))
-  accCET[year] <-  cor(gv(CET), pheno(CET))
-
 
 
   # Seedling Nursery (SDN)

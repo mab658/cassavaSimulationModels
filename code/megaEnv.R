@@ -18,10 +18,15 @@ gebv <- gsModel(snpsMarker=trainRec$genoNA,datName=trainRec$phenoNA)
     cat("Advancing breeding with Narrow-adaptation program
        year:",year,"of", nCycles, "\n")
 
+    # selection accuracy for UYT
+
+    accUYT[year] <-  cor(gv(UYT), ebv(UYT))
     variety <- selectInd(pop=UYT,nInd=nVarietySel,use="pheno",simParam=SP)
   
 
     # Uniform Yield Trial (UYT)
+    # selection accuracy for AYT
+    accAYT[year] <-  cor(gv(AYT), ebv(AYT))
     UYT <- selectInd(pop=AYT, nInd=nUYT, use="ebv", simParam=SP)
     # Invoke the function to phenotype selected UYT clones in 4 locations
     UYTrec <- gxeSim(pval1=pval1UYT,pval2=pval2UYT, pop=UYT,
@@ -29,12 +34,11 @@ gebv <- gsModel(snpsMarker=trainRec$genoNA,datName=trainRec$phenoNA)
     
     UYT <- UYTrec[[1]] # extract out UYT pop from the list output
     
-    # estimate breeding values for the evaluated UYT lines and evaluated selection accuracy
-    UYT@ebv <- as.matrix(gebv[rownames(gebv) %in% UYT@id])
-    accUYT[year] <-  cor(gv(UYT), ebv(UYT))
-
   
     #  Advance Yield Trial (AYT)
+    # selection accuracy for PYT
+
+    accPYT[year] <-  cor(gv(PYT), ebv(PYT))
     AYT <- selectInd(pop=PYT, nInd=nAYT,use="ebv", simParam=SP)
 
     # Invoke the function to phenotype selected AYT clones in 2 locations
@@ -44,24 +48,20 @@ gebv <- gsModel(snpsMarker=trainRec$genoNA,datName=trainRec$phenoNA)
     
     AYT <- AYTrec[[1]]
     # estimate breeding values for the evaluated AYT lines and evaluated selection accuracy
-    AYT@ebv <- as.matrix(gebv[rownames(gebv) %in% AYT@id])
-    accAYT[year] <-  cor(gv(AYT), ebv(AYT))
 
    
     # Preliminary  Yield  Trial (PYT)
+    # evaluate accuracy of selection on CET based on GEBV
+    accCET[year] <-  cor(gv(CET), ebv(CET)) # evaluate accuracy of selection based on GEBV
+
     PYT <- selectInd(pop=CET, nInd=nPYT, use="ebv", simParam=SP)
     PYTrec <- gxeSim(pval1=pvalPYT, pval2=pvalPYT, pop=PYT,
                      varE=errVarPYT,nreps=repPYT,nLocs=1)
     PYT <- PYTrec[[1]]
     
-    # estimate breeding values for the evaluated PYT  lines
-    PYT@ebv <- as.matrix(gebv[rownames(gebv) %in% PYT@id])
-    accPYT[year] <-  cor(gv(PYT), ebv(PYT)) # evaluate accuracy of selection based on GEBV
-
 
     # Clonal Evaluation Trial (CET) - Implement GS
     # Select individuals from the SDN stage based on phenotype performance
-    accCET[year] <-  cor(gv(CET), ebv(CET)) # evaluate accuracy of selection base
     
     # Select individuals from the SDN stage based on phenotype performance
     CET <- selectWithinFam(pop=SDN, nInd=famSize, use="pheno",simParam=SP)

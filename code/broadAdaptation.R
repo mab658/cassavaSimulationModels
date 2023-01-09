@@ -20,11 +20,16 @@ for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
   cat("Advancing breeding with broad-adaptation program
       strategy year:",year,"of", nCycles, "\n")
 
-  # Selecting variety for release
-  variety <- selectInd(UYT,nInd=nVarietySel, use="pheno",simParam=SP)
 
- 
-  # Uniform yield trial  (UYT)
+
+   # selection accuracy for UYT
+
+  accUYT[year] <-  cor(gv(UYT), ebv(UYT))
+  # Selecting variety for release
+  variety <- selectInd(pop=UYT,nInd=nVarietySel, use="pheno",simParam=SP)
+
+  # selection accuracy for AYT
+  accUYT[year] <-  cor(gv(AYT), ebv(AYT))
   UYT <- selectInd(pop=AYT,  nInd=nUYT, use="ebv", simParam=SP)
  
   # Invoke the function to phenotype selected UYT clones in 8 locations
@@ -32,11 +37,10 @@ for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
                 varE=errVarUYT, nreps=repUYT,nLocs=8)
   UYT <- UYTrec[[1]]
   
-  # estimate breeding values for the evaluated UYT lines and evaluated selection accuracy
-  UYT@ebv <- as.matrix(gebv[rownames(gebv) %in% UYT@id])
-  accUYT[year] <-  cor(gv(UYT), ebv(UYT))
 
 
+  # selection accuracy for PYT
+  accPYT[year] <-  cor(gv(PYT), ebv(PYT))
 
   # Advance Yield Trial (AYT) - use EBV to select the best AYT lines from PYT
   AYT <- selectInd(pop=PYT, nInd=nAYT,use="ebv",simParam=SP)
@@ -46,10 +50,9 @@ for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
                 varE=errVarAYT, nreps=repAYT,nLocs=4)
   AYT <- AYTrec[[1]]
 
-  # estimate breeding values for the evaluated AYT lines and evaluated selection accuracy
-  AYT@ebv <- as.matrix(gebv[rownames(gebv) %in% AYT@id])
-  accAYT[year] <-  cor(gv(AYT), ebv(AYT))
 
+  # selection accuracy for CET
+  accCET[year] <-  cor(gv(CET), ebv(CET)) # evaluate accuracy of selection based on GEBV
 
   # Preliminary  Yield  Trial (PYT) - use EBV to select the best PYT lines from CET
   PYT <- selectInd(pop=CET, nInd=nPYT, use="ebv",simParam=SP)
@@ -58,18 +61,12 @@ for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
   PYTrec <- gxeSim(pval1=0.3, pval2=0.7, pop=PYT,
                 varE=errVarPYT, nreps=repPYT, nLocs=2)
   PYT <- PYTrec[[1]]  
-  # estimate breeding values for the evaluated PYT  lines 
-  PYT@ebv <- as.matrix(gebv[rownames(gebv) %in% PYT@id])
-  accPYT[year] <-  cor(gv(PYT), ebv(PYT)) # evaluate accuracy of selection based on GEBV
   
 
   # Clonal Evaluation Trial (CET) - Implement GS
-  # Select individuals from the SDN stage based on phenotype performance
-  cat("\n CET corr in loop:",REP,"of", nSimRun,"replication", "\n")
-  accCET[year] <-  cor(gv(CET), ebv(CET)) # evaluate accuracy of selection base>
-  
   CET <- selectWithinFam(pop=SDN, nInd=famSize, use="pheno",simParam=SP)
   CET <- selectInd(pop=CET, nInd=nCET, use="pheno", simParam=SP)
+
   #Invoke the function to phenotype selected PYT clones in 2 locations
   CETrec <- gxeSim(pval1=0.5, pval2=0.5, pop=CET,
                    varE=errVarCET,nreps=repCET,nLocs=1)  

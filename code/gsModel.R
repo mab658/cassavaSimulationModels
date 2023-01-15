@@ -26,7 +26,7 @@ gsModel <- function(snpsMarker,datName){
                         residual=~units,
                         weights= wt,
                         na.action=na.method(y="include"),
-                        workspace=250e6, maxit=80,data=datName,trace=T)
+                        workspace=250e6, maxit=80,data=datName,trace=F)
 
   # extract the gblup value
   gebv <- summary(modelFit, coef=TRUE)$coef.random

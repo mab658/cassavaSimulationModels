@@ -58,12 +58,12 @@ for(year in 1:burninYears){#Change to any number of desired years
   
   AYT <- AYTrec[[1]] # extract out the phenotypic values
 
+
   # Preliminary  Yield  Trial (PYT)
   PYT <- selectInd(pop=CET, nInd=nPYT, use="pheno", simParam=SP)
   PYTrec <- gxeSim(pval1=0.3, pval2=0.7, pop=PYT,
                 varE=errVarPYT,nreps=repPYT,nLocs=2)
   PYT <- PYTrec[[1]]
-
 
 
   #  Clonal Evaluation Trial (CET)
@@ -82,7 +82,7 @@ for(year in 1:burninYears){#Change to any number of desired years
   # recycle new parents in each year of burn-in phase
   # by selecting best individuals from joint (UYT and AYT) population
  
-  parents <- selectInd(c(UYT,AYT), nInd=50, 
+  parents <- selectInd(c(UYT,AYT), nInd=nInd(parents), 
                        use="pheno",simParam=SP)
 
   # crossing block

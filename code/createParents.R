@@ -7,11 +7,9 @@ founderGenomes <- runMacs2(nInd=nParents,
                        nChr=18,
                        segSites=nQTL+nSNP,
                        Ne = 100,
-                       bp=1e+08, # physical length (bp)
-                       genLen=1.43, # genetic length (M)
-                       mutRate = 2.5e-08,
-                       #histNe = c(500, 1500, 6000, 12000, 1e+05),
-                       #histGen =  c(100, 1000, 10000, 1e+05, 1e+06),
+                       #bp=1e+08, # physical length (bp)
+                       #genLen=1.43, # genetic length (M)
+                       #mutRate = 2.5e-08,
                        inbred= FALSE,
                        #species = "GENERIC",
                        ploidy = 2L
@@ -31,7 +29,7 @@ SP <- SimParam$new(founderGenomes)
 # can serve as SNP or QTL
 # `restrSegSites prevents SNP from also being QTL
 
-SP$restrSegSites(nQTL, nSNP, overlap = FALSE) # maxQTL=nQTL and maxSNp=nSNP
+SP$restrSegSites(nQTL, nSNP, overlap=FALSE) # maxQTL=nQTL and maxSNp=nSNP
 
 
 # define a trait with additive, dominance, and GxE genetic architecture
@@ -48,12 +46,11 @@ SP$restrSegSites(nQTL, nSNP, overlap = FALSE) # maxQTL=nQTL and maxSNp=nSNP
 #varDD - Variance of dominance degree
 
 # we also modelled both environmental variance (varEnv=0) and
-# GxE interaction variance (varGxE=0.5)
+# GxE interaction variance (varGxE=15 or 30)
 
-SP$addTraitADG(nQtlPerChr=nQTL, mean=0, var=1,
+SP$addTraitADG(nQtlPerChr=nQTL, mean=0, var=10,
               meanDD=ddMean,varDD=ddVar,
               varGxE=varGE)
-
 
 # add SNPs chip for all simulated SNPS markers in the population
 # SNPs are generally described by the number of SNP position the assay
@@ -66,7 +63,7 @@ SP$setTrackRec(TRUE) # keep track records
 
 
 # set a phenotype for the initial parents in the founder population
-SP$setVarE(H2=0.20)
+#SP$setVarE(H2=0.30)
 
 # create initial parental base population from founder genomes
 # from which unique individuals in each evaluation stage are generated

@@ -24,6 +24,7 @@ for(year in (burninYears+1):nCycles){
 
   UYT <- UYTrec[[1]]
 
+
   # Selection accuracy
   accPYT[year] <-  cor(gv(PYT), pheno(PYT))
 
@@ -37,20 +38,20 @@ for(year in (burninYears+1):nCycles){
   AYT <- AYTrec[[1]]
 
   # Selection accuracy
-   accCET[year] <-  cor(gv(CET), pheno(CET))
-  
+  accCET[year] <-  cor(gv(CET), pheno(CET))
+
   # Preliminary  Yield  Trial (PYT)
   PYT <- selectInd(pop=CET, nInd=nPYT, use="pheno",simParam=SP)
-
   # Invoke the function to phenotype selected PYT clones in 2 locations
   PYTrec <- gxeSim(pval1=0.3, pval2=0.7, pop=PYT,
                 varE=errVarPYT,nreps=repPYT,nLocs=2)
 
-
   PYT <- PYTrec[[1]]
+
 
   # Clonal Evaluation Trial (CET)
   CET <- selectWithinFam(pop=SDN, nInd=famSize, use="pheno", simParam=SP)
+  CET <- selectInd(pop=CET, nInd=nCET, use="pheno", simParam=SP)
   CETrec <- gxeSim(pval1=0.5, pval2=0.5, pop=CET,
                 varE=errVarCET,nreps=repCET,nLocs=1)
 
@@ -61,8 +62,16 @@ for(year in (burninYears+1):nCycles){
   SDN <- setPheno(pop=F1, varE=errVarSDN,reps=repSDN,p=0.5,simParam=SP)
 
   # Update and recycle parents in the crossing block
-  parents <- selectInd(pop=c(UYT,AYT),nInd=50,
+  parents <- selectInd(pop=c(UYT,AYT),nInd=25,
                        use="pheno",simParam=SP)
+
+
+ # number of trials by stages in the parental candidate
+  nParCET[year] <- NA
+  nParPYT[year] <- NA
+  nParAYT[year] <- sum(parents@id %in% AYT@id)
+  nParUYT[year] <- sum(parents@id %in% UYT@id)
+
 
   # Crossing block - Make crosses to generate new population
   F1 <- randCross(pop=parents, nCrosses=nCrosses,
@@ -85,4 +94,9 @@ simParms <- data.frame(simRun=rep(REP,nCycles),
                        accCET=accCET,
                        accPYT=accPYT,
                        accAYT=accAYT,
-                       accUYT=accUYT)
+                       accUYT=accUYT,
+
+                       nParCET=nParCET,
+                       nParPYT=nParPYT,
+                       nParAYT=nParAYT,
+                       nParUYT=nParUYT)

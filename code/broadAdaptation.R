@@ -8,28 +8,31 @@
 # Train genomic selection (GS) model and safe the model fit
 
 # invoke gsModel function to fit GBLUP model
-gebv <- gsModel(snpsMarker=snps,datName=phenoDat)
+  gebv <- gsModel(snpsMarker=snps,datName=phenoDat)
 
-# Estimate breeding values in  CET, PYT, AYT, and UYT for being genotyped using GBLUP model
-  CET@ebv <- as.matrix(gebv[rownames(gebv) %in% CET@id])
-  PYT@ebv <- as.matrix(gebv[rownames(gebv) %in% PYT@id])
-  AYT@ebv <- as.matrix(gebv[rownames(gebv) %in% AYT@id])
-  UYT@ebv <- as.matrix(gebv[rownames(gebv) %in% UYT@id])
+# assign ebv to the population from GBLUP model
+  
+  CET@ebv <- as.matrix(gebv[CET@id,])
+  PYT@ebv <- as.matrix(gebv[PYT@id,])
+  AYT@ebv <- as.matrix(gebv[AYT@id,])
+  UYT@ebv <- as.matrix(gebv[UYT@id,])
+
   
 for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
   cat("Advancing breeding with broad-adaptation program
       strategy year:",year,"of", nCycles, "\n")
 
 
-
-   # selection accuracy for UYT
-
+  # Selection accuracy from UYT	lines for variety release
   accUYT[year] <-  cor(gv(UYT), ebv(UYT))
+
   # Selecting variety for release
   variety <- selectInd(pop=UYT,nInd=nVarietySel, use="pheno",simParam=SP)
+ 
+ 
 
-  # selection accuracy for AYT
-  accUYT[year] <-  cor(gv(AYT), ebv(AYT))
+  # Selection accuracy from AYT	lines to UYT
+  accAYT[year] <-  cor(gv(AYT), ebv(AYT))
   UYT <- selectInd(pop=AYT,  nInd=nUYT, use="ebv", simParam=SP)
  
   # Invoke the function to phenotype selected UYT clones in 8 locations
@@ -38,8 +41,7 @@ for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
   UYT <- UYTrec[[1]]
   
 
-
-  # selection accuracy for PYT
+  # Selection accuracy from PYT lines to AYT
   accPYT[year] <-  cor(gv(PYT), ebv(PYT))
 
   # Advance Yield Trial (AYT) - use EBV to select the best AYT lines from PYT
@@ -51,9 +53,9 @@ for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
   AYT <- AYTrec[[1]]
 
 
-  # selection accuracy for CET
-  accCET[year] <-  cor(gv(CET), ebv(CET)) # evaluate accuracy of selection based on GEBV
+  # evaluate accuracy of selection based on pheno and GEBV 
 
+  accCET[year] <-  cor(gv(CET), ebv(CET))
   # Preliminary  Yield  Trial (PYT) - use EBV to select the best PYT lines from CET
   PYT <- selectInd(pop=CET, nInd=nPYT, use="ebv",simParam=SP)
  
@@ -72,10 +74,10 @@ for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
                    varE=errVarCET,nreps=repCET,nLocs=1)  
   CET <- CETrec[[1]]
 
+
   # Seedling Nursery
   SDN <- setPheno(pop=F1, varE=errVarSDN, reps=repSDN, fixEff=year,
                   p=0.5, simParam=SP)
-
 
 
   # Save mean and variance of genetic values
@@ -106,16 +108,18 @@ for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
   # Train genomic selection (GS) model and safe the model fit
   gebv <- gsModel(snpsMarker=snps,datName=phenoDat) # invoke gsModel function to fit GBLUP model
 
-  # Estimate breeding values in  CET, PYT, AYT, and UYT for being genotyped using GBLUP model
-  CET@ebv <- as.matrix(gebv[rownames(gebv) %in% CET@id])
-  PYT@ebv <- as.matrix(gebv[rownames(gebv) %in% PYT@id])
-  AYT@ebv <- as.matrix(gebv[rownames(gebv) %in% AYT@id])
-  UYT@ebv <- as.matrix(gebv[rownames(gebv) %in% UYT@id])
+
+  # assign ebv to the population from GBLUP model
+    CET@ebv <- as.matrix(gebv[CET@id,])
+    PYT@ebv <- as.matrix(gebv[PYT@id,])
+    AYT@ebv <- as.matrix(gebv[AYT@id,])
+    UYT@ebv <- as.matrix(gebv[UYT@id,])
 
   # recycle new parent
-  parSelCand <- c(UYT,AYT,PYT,CET)
-  parSelCand@ebv <- as.matrix(gebv[rownames(gebv) %in% parSelCand@id])
-  parents <- selectInd(pop=parSelCand, nInd=nInd(parents), use="ebv",simParam=SP)
+   parSelCand <- c(UYT,AYT,PYT,CET)
+   #parSelCand@ebv <- as.matrix(gebv[parSelCand@id,])
+   parents <- selectInd(pop=parSelCand, nInd=nInd(parents), use="ebv",simParam=SP)
+
 
   # number of trials by stages in the parental candidate
   nParCET[year] <- sum(parents@id %in% CET@id)
@@ -124,7 +128,6 @@ for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
   nParUYT[year] <- sum(parents@id %in% UYT@id)
 
   # crossing block
-
   F1 <- randCross(pop=parents, nCrosses=nCrosses, nProgeny=nProgeny, simParam=SP)
 
 } # end loop
@@ -136,6 +139,7 @@ simParms <- data.frame(simRun=rep(REP,nCycles),
                      meanGV=meanGV,
                      varGV=varGV,
                      varGxE=varGE,
+
                      accCET=accCET,
                      accPYT=accPYT,
                      accAYT=accAYT,

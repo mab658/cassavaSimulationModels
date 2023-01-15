@@ -1,12 +1,12 @@
 # Define global parameters required for simulation running
 
-nSimRun <- 10  # Number of simulation repetitions
+nSimRun <- 5  # Number of simulation repetitions
 burninYears <- 10 # length of common burn-in phase
 futureYears <- 10 # length of testing period for future phase
 nCycles <- burninYears+futureYears # Number of breeding cycles
 
 # Define parameter for the crossing block
-nParents <- 50
+nParents <- 25
 nCrosses <- 200 # number of crosses to be 200
 nProgeny <- 50 # number of progeny per cross
 famSize <- 5 # selected individuals per family or cross
@@ -14,7 +14,7 @@ nVarietySel <- 4 # Number of variety released
 
 # Number of causal sites (QTL) and SNP per each of 18  chrom
 nQTL <- 300 # 18 Chrs x 300 QTLs = 5400 sites with effect
-nSNP <- 1000
+nSNP <- 700 # set to 1000 b4
 
 # mean and variance Degree of dominance
 # contributes to inbreeding depression and dominance variance
@@ -24,8 +24,8 @@ ddMean <- 0.20
 ddVar <- 0.10 # Variance dominance degree 
 
 # Different scenario of GxE variance
-#varGE <- 0.0
-varGE <- 0.2
+varGE <- 15
+#varGE <- 0.2
 #varGE <- 0.5
 #varGE <- 10 
 
@@ -47,7 +47,7 @@ repUYT <- 3
 ### Genomic selection parameters
 #Start  training population historical records  of 5 years
 
-startTrainPop <- 6
+startTrainPop <- 8
 
 #Sliding window year limitation => no. of historical records to keep
 # after limit year of 5 then remove old records

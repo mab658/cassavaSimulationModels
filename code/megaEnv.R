@@ -6,11 +6,12 @@ megaEnv <- function(pval1UYT,pval2UYT,
 # invoke gsModel function to fit GBLUP model
 gebv <- gsModel(snpsMarker=trainRec$genoNA,datName=trainRec$phenoNA)
 
-# Estimate breeding values in  CET, PYT, AYT, and UYT for being genotyped using GBLUP model
-  CET@ebv <- as.matrix(gebv[rownames(gebv) %in% CET@id])
-  PYT@ebv <- as.matrix(gebv[rownames(gebv) %in% PYT@id])
-  AYT@ebv <- as.matrix(gebv[rownames(gebv) %in% AYT@id])
-  UYT@ebv <- as.matrix(gebv[rownames(gebv) %in% UYT@id])
+
+  # assign ebv to the population from GBLUP model
+  CET@ebv <- as.matrix(gebv[CET@id,])
+  PYT@ebv <- as.matrix(gebv[PYT@id,])
+  AYT@ebv <- as.matrix(gebv[AYT@id,])
+  UYT@ebv <- as.matrix(gebv[UYT@id,])
 
 
   for(year in (burninYears+1):nCycles){ # begining of loop
@@ -18,15 +19,16 @@ gebv <- gsModel(snpsMarker=trainRec$genoNA,datName=trainRec$phenoNA)
     cat("Advancing breeding with Narrow-adaptation program
        year:",year,"of", nCycles, "\n")
 
-    # selection accuracy for UYT
 
+    # Selection accuracy from UYT lines for variety release
     accUYT[year] <-  cor(gv(UYT), ebv(UYT))
     variety <- selectInd(pop=UYT,nInd=nVarietySel,use="pheno",simParam=SP)
   
 
     # Uniform Yield Trial (UYT)
-    # selection accuracy for AYT
+    # Selection accuracy from AYT lines to UYT
     accAYT[year] <-  cor(gv(AYT), ebv(AYT))
+   
     UYT <- selectInd(pop=AYT, nInd=nUYT, use="ebv", simParam=SP)
     # Invoke the function to phenotype selected UYT clones in 4 locations
     UYTrec <- gxeSim(pval1=pval1UYT,pval2=pval2UYT, pop=UYT,
@@ -36,8 +38,7 @@ gebv <- gsModel(snpsMarker=trainRec$genoNA,datName=trainRec$phenoNA)
     
   
     #  Advance Yield Trial (AYT)
-    # selection accuracy for PYT
-
+    # Selection accuracy from PYT lines  to AYT
     accPYT[year] <-  cor(gv(PYT), ebv(PYT))
     AYT <- selectInd(pop=PYT, nInd=nAYT,use="ebv", simParam=SP)
 
@@ -53,7 +54,7 @@ gebv <- gsModel(snpsMarker=trainRec$genoNA,datName=trainRec$phenoNA)
     # Preliminary  Yield  Trial (PYT)
     # evaluate accuracy of selection on CET based on GEBV
     accCET[year] <-  cor(gv(CET), ebv(CET)) # evaluate accuracy of selection based on GEBV
-
+    
     PYT <- selectInd(pop=CET, nInd=nPYT, use="ebv", simParam=SP)
     PYTrec <- gxeSim(pval1=pvalPYT, pval2=pvalPYT, pop=PYT,
                      varE=errVarPYT,nreps=repPYT,nLocs=1)
@@ -100,16 +101,18 @@ gebv <- gsModel(snpsMarker=trainRec$genoNA,datName=trainRec$phenoNA)
     # Train genomic selection (GS) model and safe the model fit
     gebv <- gsModel(snpsMarker=trainRec$genoNA,datName=trainRec$phenoNA) # invoke gsModel function to fit GBLUP model
 
-    # extract Estimate BVs for CET, PYT, AYT, and UYT from GBLUP model
-    CET@ebv <- as.matrix(gebv[rownames(gebv) %in% CET@id])
-    PYT@ebv <- as.matrix(gebv[rownames(gebv) %in% PYT@id])
-    AYT@ebv <- as.matrix(gebv[rownames(gebv) %in% AYT@id])
-    UYT@ebv <- as.matrix(gebv[rownames(gebv) %in% UYT@id])
+
+    # assign ebv to the population from GBLUP model
+    CET@ebv <- as.matrix(gebv[CET@id,])
+    PYT@ebv <- as.matrix(gebv[PYT@id,])
+    AYT@ebv <- as.matrix(gebv[AYT@id,])
+    UYT@ebv <- as.matrix(gebv[UYT@id,])
+
 
     # Recycle  new parents in the current year
     # based on gebv before advancing materials
     parSelCand <- c(UYT,AYT,PYT,CET)
-    parSelCand@ebv <- as.matrix(gebv[rownames(gebv) %in% parSelCand@id])
+    # parSelCand@ebv <- as.matrix(gebv[parSelCand@id,])
     parents <- selectInd(pop=parSelCand, nInd=nInd(parents), use="ebv",simParam=SP)
 
     # number of individuals by stages in the parental candidate
@@ -119,7 +122,7 @@ gebv <- gsModel(snpsMarker=trainRec$genoNA,datName=trainRec$phenoNA)
     nParUYT[year] <- sum(parents@id %in% UYT@id)  
 
     # make new crosses
-    F1 <- randCross(pop=parents, nCrosses=100,nProgeny=25,simParam=SP)
+    F1 <- randCross(pop=parents, nCrosses=100,nProgeny=50,simParam=SP)
 
   } # end loop
   
@@ -130,6 +133,7 @@ gebv <- gsModel(snpsMarker=trainRec$genoNA,datName=trainRec$phenoNA)
                          meanGV=meanGV,
                          varGV=varGV,
 			 varGxE=varGE,
+
                          accCET=accCET,
                          accPYT=accPYT,
                          accAYT=accAYT,

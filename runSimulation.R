@@ -1,21 +1,21 @@
 rm(list=ls())
 library(AlphaSimR)
-library(asreml)
-library(AGHmatrix)
-library(ASRgenomics)
-library(doParallel)
 library(parallel)
 library(foreach)
+library(doParallel)
 library(dplyr)
 library(tibble)
 library(ggplot2)
 library(tidyr)
 
 # setwd("/Users/mab658/Documents/cassavaSimulationModels")
+# Note define a cluster using makeCluster for FORK parallel backend do not work 
 
-# set the number of cores and register doParallel as our parallel backend
+# set the number of cores and register  parallel backend
+nCores <- parallel::detectCores()/2 # number of cores to use
+doParallel::registerDoParallel(cores = nCores) # register parallel backend
 
-doParallel::registerDoParallel(cores = 40)
+#doParallel::registerDoParallel(cl=nCores) # register parallel backend
 
 
 # Load global parameters
@@ -31,7 +31,6 @@ source("./code/gsModel.R")
 
 
 (start.time <- Sys.time())
-
 
 # Simulate 10-year of burn-in phase for each simulation replicate
 for(REP in 1:nSimRun){
@@ -54,7 +53,6 @@ for(REP in 1:nSimRun){
 #  Scenario 1: conventional breeding program
  result.conv <- foreach(REP=1:nSimRun,
                         .packages=c("AlphaSimR"),
-                        .export=c("gxeSim","splitPop","gsModel"),
                         .combine=rbind,
                         .multicombine=TRUE,
                         .verbose=TRUE
@@ -74,11 +72,20 @@ for(REP in 1:nSimRun){
 print(result.conv)
 write.csv(result.conv, file="conv.csv", row.names=FALSE)
 
+distPar.conv <- result.conv %>%
+        dplyr::filter(year > burninYears) %>%
+        dplyr::select(simRun,year,scenario,nParCET,nParPYT,nParAYT,nParUYT)
+
+ cat("\n Number of trial stages per parental generation \n")
+print(distPar.conv)
+
+result.conv <- subset(result.conv,select = -c(nParCET,nParPYT,nParAYT,nParUYT))
+
 
 
 # Scenario 2: Broad adaptation breeding program
 result.broad <- foreach(REP=1:nSimRun,
-                       .packages=c("AlphaSimR", "AGHmatrix","asreml"),
+                       .packages=c("AlphaSimR","ASRgenomics","AGHmatrix","asreml"),
                        .combine=rbind,
                        .multicombine=TRUE,
                        .verbose=TRUE
@@ -99,21 +106,22 @@ result.broad <- foreach(REP=1:nSimRun,
   return(simParms)
 }
 
-print(result.broad)
+#print(result.broad)
 # number of trial stages per parental generation
 
  cat("\n Number of trial stages per parental generation \n")
 
-distPar <- result.broad %>%
+distPar.BA <- result.broad %>%
         dplyr::filter(year > burninYears) %>%
         dplyr::select(simRun,year,scenario,nParCET,nParPYT,nParAYT,nParUYT)
-print(distPar)
+#print(distPar.BA)
 
 result.broad <- subset(result.broad,select = -c(nParCET,nParPYT,nParAYT,nParUYT))
 print(result.broad)
 
 
 write.csv(result.broad, file="broad.csv",row.names=FALSE)
+
 
 
 # Scenario 3: Narrow adaptation - megaEnv1
@@ -124,9 +132,8 @@ write.csv(result.broad, file="broad.csv",row.names=FALSE)
 # information is limited
 # GS is used to advance from CET, PYT, AYT, and UYT
 
-result.me1 <- foreach(REP=icount(nSimRun),
-                       .export=c("gxeSim","splitPop","gsModel","megaEnv"),
-	               .packages=c("AlphaSimR", "AGHmatrix","asreml"),
+result.me1 <- foreach(REP=1:nSimRun,
+	               .packages=c("AlphaSimR","ASRgenomics", "AGHmatrix","asreml"),
                        .combine=rbind,
                        .multicombine=TRUE,
                        .verbose=TRUE
@@ -156,16 +163,20 @@ result.me1 <- foreach(REP=icount(nSimRun),
 } # end of doParallel
 
 
-distPar <- result.me1 %>%
+distPar.me1 <- result.me1 %>%
         dplyr::filter(year > burninYears) %>%
         dplyr::select(simRun,year,scenario,nParCET,nParPYT,nParAYT,nParUYT)
-print(distPar)
+
+
+cat("\n # of individuals from evaluation stages that constitute parental candidate - ME1 \n")
+
+print(distPar.me1)
+
 
 result.me1 <- subset(result.me1,select = -c(nParCET,nParPYT,nParAYT,nParUYT))
 
-cat("\n Number of trial stages per parental generation - ME1 \n")
+cat("\n Simulated data for mega environment 1 - ME1 \n")
 print(result.me1)
-
 
 
 
@@ -176,15 +187,14 @@ print(result.me1)
 # information is limited
 # GS is used to advance individuals from CET, PYT, AYT, and UYT
 
-result.me2 <- foreach(REP=icount(nSimRun),
-                       .export=c("gxeSim","splitPop","gsModel","megaEnv"),
-                       .packages=c("AlphaSimR", "AGHmatrix","asreml"),
+result.me2 <- foreach(REP=1:nSimRun,
+                       .packages=c("AlphaSimR","ASRgenomics", "AGHmatrix","asreml"),
                        .combine=rbind,
                        .multicombine=TRUE,
                        .verbose=TRUE
 ) %dopar%{
 
-  cat("\n Modeling scenario 3 narrowv- ME2  adaptation enabled GS \n")
+  cat("\n Modeling scenario 3 narrow adaptation - ME2 enabled GS \n")
 
   cat("\n Simulation run:",REP,"of", nSimRun,"replication", "\n")
 
@@ -208,14 +218,17 @@ result.me2 <- foreach(REP=icount(nSimRun),
 }
 
 
-distPar <- result.me2 %>%
+distPar.me2 <- result.me2 %>%
         dplyr::filter(year > burninYears) %>%
         dplyr::select(simRun,year,scenario,nParCET,nParPYT,nParAYT,nParUYT)
-print(distPar)
+
+cat("\n # of individuals from evaluation stages that constitute parental candidate - ME2 \n")
+print(distPar.me2)
 
 result.me2 <- subset(result.me2,select = -c(nParCET,nParPYT,nParAYT,nParUYT))
 
-cat("\n Number of trial stages per parental generation - ME1 \n")
+
+cat("\n Simulated data for mega environment 2 - ME2 \n")
 print(result.me2)
 
 
@@ -228,22 +241,6 @@ saveRDS(simData,file=paste0("./data/simData",".rds"))
 
 # rescale cycle year so that last burnin year is zero
 simData$year <- -(burninYears-1):burninYears
-
-
-# compute the average genetic gain for each breeding program
-# across the breeding cycle
-
-cat("\n Average genetic gain and genetic variance by breeding program \n")
-simSumm <- simData %>%
-  dplyr::filter(year>0) %>%
-  group_by(scenario) %>%
-  dplyr::summarise(
-    genGain = mean(meanGV),
-    seGain = sd(meanGV)/sqrt(length(simRun)),
-    genVar = mean(varGV),
-    seGenVar = sd(varGV)/sqrt(length(simRun)))
-print(simSumm)
-
 
 # compute genetic gain and genetic variance by cycle from last year of burn-in to last future year
 
@@ -305,27 +302,46 @@ genVarPlot <- ggplot(data=simSumm,aes(x=year,y=genVar,color=scenario))+ geom_poi
 ggsave("./output/geneticVariance.jpeg",height=4.2, width=6.5, units="in", dpi=300)
 
 
-# plot the accuracy at PYT stage
 
-selAccurPlot <- ggplot(data=simSumm,aes(x=year,y=selAccur,color=scenario))+
-  geom_point()+
-  geom_line(size=1)+
-  geom_errorbar(aes(ymin=selAccur-seAccur, ymax=selAccur+seAccur), width=0.2,
-                position=position_dodge(0.05))+
-  guides(scale="none")+
-  theme_bw()+
-  theme(legend.position = c(0.03,0.96),
-        legend.justification = c("left","top"))+
-  scale_x_continuous("Year",limits=c(0,futureYears))+
-  scale_y_continuous("Selection accuracy",limits=c(0,NA))
+# plot distribution of the number of individuals that constitute the parental candidate
+parDist <- rbind(distPar.conv,distPar.BA, distPar.me1, distPar.me2)
 
-# print(selAccurPlot)
+write.csv(parDist,file=paste0("./data/parentDist",".csv"),row.names=FALSE)
+saveRDS(parDist,file=paste0("./data/parDist",".rds"))
 
+
+parCount <- parDist %>%
+  gather(key = stage,value = nPar,-c(simRun,year,scenario))
+
+parCount$scenario <- factor(parCount$scenario,
+                           levels = c("Conv","Broad adaptation",
+                                      "Narrow adaptation"),
+                        labels=c("Conventional","Broad adaptation",
+                                 "Narrow adaptation"))
+
+parCount$stage <- factor(parCount$stage,
+                        levels = c("nParCET","nParPYT","nParAYT","nParUYT"),
+                        labels=c("CET","PYT","AYT","UYT"))
+
+write.csv(parCount,file=paste0("./data/distParentCount",".csv"),row.names=FALSE)
+
+print(parCount)
+
+distParCand  <- ggplot(data = parCount, aes(x=scenario,y=nPar, fill=stage)) +
+    geom_boxplot( stat = "boxplot",  outlier.colour = "red", outlier.shape=16,
+        outlier.size = 0.5, na.rm=TRUE) +
+  labs(x= "Breeding strategy", y= "Parental lines") + theme_bw() +
+  theme(axis.title = element_text(colour="black", size=12),
+         plot.title = element_text(hjust = 0.5,lineheight=.5,colour="black", size=12),
+         axis.text = element_text(face="bold", size=7))
+
+# print(distParCand)
 # save the plot to a file
-ggsave("./output/predAccuracy.jpeg",height=4.2, width=6.5, units="in", dpi=300)
+ggsave("./output/distParentalCandidate.jpeg",height=4.2, width=6.5, units="in", dpi=300)
 
 
-# boxplot of selection accuracy
+
+# boxplot of comparing the distribution of  accuracy of selection criterion acros the stages
 
 selAccur <- simData %>%
   dplyr::filter(year>0) %>%
@@ -388,6 +404,30 @@ geom_bar(stat = "identity", position = "dodge")+
 ggsave("./output/selAccuracyMean.jpeg",height=4.2, width=6.5, units="in", dpi=300)
 
 
+
+
+# plot line trends of the accuracy at PYT stage
+
+selAccurPlot <- ggplot(data=simSumm,aes(x=year,y=selAccur,color=scenario))+
+  geom_point()+
+  geom_line(size=1)+
+  geom_errorbar(aes(ymin=selAccur-seAccur, ymax=selAccur+seAccur), width=0.2,
+                position=position_dodge(0.05))+
+  guides(scale="none")+
+  theme_bw()+
+  theme(legend.position = c(0.03,0.96),
+        legend.justification = c("left","top"))+
+  scale_x_continuous("Year",limits=c(0,futureYears))+
+  scale_y_continuous("Selection accuracy",limits=c(0,NA))
+
+# print(selAccurPlot)
+
+# save the plot to a file
+ggsave("./output/predAccuracy.jpeg",height=4.2, width=6.5, units="in", dpi=300)
+
+
+
+
 # fit linear regression of genetic gain on the breeding cycle of evaluation phase
 # to calculate rate of genetic gain per year
 
@@ -407,5 +447,5 @@ cat("Rate of genetic gain per year for narrow adaptation breeding program is",
 
 (end.time <- Sys.time())
 (end.time - start.time)
-#stopCluster(cl)
+
 doParallel::stopImplicitCluster()

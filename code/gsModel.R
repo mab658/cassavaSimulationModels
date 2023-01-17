@@ -1,11 +1,14 @@
 # function to fit GBLUP model using inverse of G-matrix in sparse form
 
 gsModel <- function(snpsMarker,datName){
- 
- datName <- datName[datName$id %in% rownames(snpsMarker),]
- datName <- datName[order(datName$stage, datName$year, datName$id),]
- datName$id <- as.factor(datName$id)
- datName$wt <- 1/datName$errVar
+
+  # match genotypic lines phenotyped and genotyped 
+  datName <- datName[datName$id %in% rownames(snpsMarker),]
+  snpsMarker <- snpsMarker[rownames(snpsMarker) %in% datName$id,]
+
+  datName <- datName[order(datName$stage, datName$year, datName$id),]
+  datName$id <- as.factor(datName$id) # coerce genotype id to a factor
+  datName$wt <- 1/datName$errVar
  
   #  genomic relationship matrix
   snpsFilter <- qc.filtering(M=snpsMarker, base=FALSE, ref=NULL,
@@ -20,19 +23,18 @@ gsModel <- function(snpsMarker,datName){
   kinv <<- G.inverse(G = Gb, sparseform = TRUE)$Ginv
 
   # Train genomic selection (GS) model and safe the model fit
-
   modelFit <- asreml(fixed=pheno~1,
                         random=~vm(id,kinv),
-                        residual=~units,
+                        residual=~idv(units),
                         weights= wt,
-                        na.action=na.method(y="include"),
-                        workspace=250e6, maxit=80,data=datName,trace=F)
+                        na.action=na.method(y="include",x="include"),
+                        workspace=250e07, maxit=80,data=datName,trace=F)
 
-  # extract the gblup value
+  # extract the genomic breeding value (GBLUP or GEBV)
   gebv <- summary(modelFit, coef=TRUE)$coef.random
-  rownames(gebv) <- as.numeric(substr(rownames(gebv),start=14,stop=19))
-
-  # extract out the gebv as matrix object
-  gebv <- as.matrix(gebv[,1])
+  rownames(gebv) <- as.numeric(substr(rownames(gebv),start=14,stop=nchar(rownames(gebv))))
+  
+  # extract out the gebv  object
+  gebv <- unlist(gebv[,1])
   return(gebv)
 }

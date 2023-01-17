@@ -8,11 +8,11 @@ gebv <- gsModel(snpsMarker=trainRec$genoNA,datName=trainRec$phenoNA)
 
 
   # assign ebv to the population from GBLUP model
-  CET@ebv <- as.matrix(gebv[CET@id,])
-  PYT@ebv <- as.matrix(gebv[PYT@id,])
-  AYT@ebv <- as.matrix(gebv[AYT@id,])
-  UYT@ebv <- as.matrix(gebv[UYT@id,])
-
+  # assign ebv to the population from GBLUP model
+  CET@ebv <- as.matrix(gebv[CET@id])
+  PYT@ebv <- as.matrix(gebv[PYT@id])
+  AYT@ebv <- as.matrix(gebv[AYT@id])
+  UYT@ebv <- as.matrix(gebv[UYT@id])
 
   for(year in (burninYears+1):nCycles){ # begining of loop
     
@@ -103,11 +103,10 @@ gebv <- gsModel(snpsMarker=trainRec$genoNA,datName=trainRec$phenoNA)
 
 
     # assign ebv to the population from GBLUP model
-    CET@ebv <- as.matrix(gebv[CET@id,])
-    PYT@ebv <- as.matrix(gebv[PYT@id,])
-    AYT@ebv <- as.matrix(gebv[AYT@id,])
-    UYT@ebv <- as.matrix(gebv[UYT@id,])
-
+    CET@ebv <- as.matrix(gebv[CET@id])
+    PYT@ebv <- as.matrix(gebv[PYT@id])
+    AYT@ebv <- as.matrix(gebv[AYT@id])
+    UYT@ebv <- as.matrix(gebv[UYT@id])
 
     # Recycle  new parents in the current year
     # based on gebv before advancing materials

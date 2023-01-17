@@ -11,13 +11,14 @@
   gebv <- gsModel(snpsMarker=snps,datName=phenoDat)
 
 # assign ebv to the population from GBLUP model
-  
-  CET@ebv <- as.matrix(gebv[CET@id,])
-  PYT@ebv <- as.matrix(gebv[PYT@id,])
-  AYT@ebv <- as.matrix(gebv[AYT@id,])
-  UYT@ebv <- as.matrix(gebv[UYT@id,])
 
-  
+  # assign ebv to the population from GBLUP model
+  CET@ebv <- as.matrix(gebv[CET@id])
+  PYT@ebv <- as.matrix(gebv[PYT@id])
+  AYT@ebv <- as.matrix(gebv[AYT@id])
+  UYT@ebv <- as.matrix(gebv[UYT@id])
+
+  print(UYT@ebv)
 for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
   cat("Advancing breeding with broad-adaptation program
       strategy year:",year,"of", nCycles, "\n")
@@ -28,9 +29,7 @@ for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
 
   # Selecting variety for release
   variety <- selectInd(pop=UYT,nInd=nVarietySel, use="pheno",simParam=SP)
- 
- 
-
+  
   # Selection accuracy from AYT	lines to UYT
   accAYT[year] <-  cor(gv(AYT), ebv(AYT))
   UYT <- selectInd(pop=AYT,  nInd=nUYT, use="ebv", simParam=SP)
@@ -108,12 +107,11 @@ for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
   # Train genomic selection (GS) model and safe the model fit
   gebv <- gsModel(snpsMarker=snps,datName=phenoDat) # invoke gsModel function to fit GBLUP model
 
-
   # assign ebv to the population from GBLUP model
-    CET@ebv <- as.matrix(gebv[CET@id,])
-    PYT@ebv <- as.matrix(gebv[PYT@id,])
-    AYT@ebv <- as.matrix(gebv[AYT@id,])
-    UYT@ebv <- as.matrix(gebv[UYT@id,])
+  CET@ebv <- as.matrix(gebv[CET@id])
+  PYT@ebv <- as.matrix(gebv[PYT@id])
+  AYT@ebv <- as.matrix(gebv[AYT@id])
+  UYT@ebv <- as.matrix(gebv[UYT@id])
 
   # recycle new parent
    parSelCand <- c(UYT,AYT,PYT,CET)

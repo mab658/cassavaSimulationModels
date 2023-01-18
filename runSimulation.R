@@ -1,6 +1,5 @@
 rm(list=ls())
 library(AlphaSimR)
-library(parallel)
 library(foreach)
 library(doParallel)
 library(dplyr)
@@ -13,9 +12,8 @@ library(tidyr)
 
 # set the number of cores and register  parallel backend
 nCores <- parallel::detectCores()/2 # number of cores to use
-doParallel::registerDoParallel(cores = nCores) # register parallel backend
 
-#doParallel::registerDoParallel(cl=nCores) # register parallel backend
+doParallel::registerDoParallel(cores = nCores) # register parallel backend
 
 
 # Load global parameters
@@ -69,22 +67,23 @@ for(REP in 1:nSimRun){
    source("./code/conv.R",local=T) 
    return(simParms)
 }
-print(result.conv)
-write.csv(result.conv, file="conv.csv", row.names=FALSE)
+#print(result.conv)
 
 distPar.conv <- result.conv %>%
         dplyr::filter(year > burninYears) %>%
         dplyr::select(simRun,year,scenario,nParCET,nParPYT,nParAYT,nParUYT)
 
  cat("\n Number of trial stages per parental generation \n")
-print(distPar.conv)
+#print(distPar.conv)
 
 result.conv <- subset(result.conv,select = -c(nParCET,nParPYT,nParAYT,nParUYT))
-
+#print(result.conv)
+#write.csv(result.conv, file="conv.csv",row.names=FALSE)
 
 
 # Scenario 2: Broad adaptation breeding program
 result.broad <- foreach(REP=1:nSimRun,
+		       .errorhandling="remove",
                        .packages=c("AlphaSimR","ASRgenomics","AGHmatrix","asreml"),
                        .combine=rbind,
                        .multicombine=TRUE,
@@ -98,29 +97,25 @@ result.broad <- foreach(REP=1:nSimRun,
   # load the burnin phase for the second scenario
   load(paste0("./data/burnin_",REP,".rda"))
   
-  phenoDat <- trainRec$phenoBA
-  snps <- trainRec$genoBA
-
   # invoke the script to advance year of breeding for genomic selection
   source("./code/broadAdaptation.R",local=T)
   return(simParms)
-}
+} # end of doParallel
 
-#print(result.broad)
+
 # number of trial stages per parental generation
-
- cat("\n Number of trial stages per parental generation \n")
+cat("\n Number of trial stages per parental generation \n")
 
 distPar.BA <- result.broad %>%
         dplyr::filter(year > burninYears) %>%
         dplyr::select(simRun,year,scenario,nParCET,nParPYT,nParAYT,nParUYT)
+
 #print(distPar.BA)
 
 result.broad <- subset(result.broad,select = -c(nParCET,nParPYT,nParAYT,nParUYT))
-print(result.broad)
+#print(result.broad)
 
-
-write.csv(result.broad, file="broad.csv",row.names=FALSE)
+#write.csv(result.broad, file="broad.csv",row.names=FALSE)
 
 
 
@@ -133,6 +128,7 @@ write.csv(result.broad, file="broad.csv",row.names=FALSE)
 # GS is used to advance from CET, PYT, AYT, and UYT
 
 result.me1 <- foreach(REP=1:nSimRun,
+                       .errorhandling="remove",
 	               .packages=c("AlphaSimR","ASRgenomics", "AGHmatrix","asreml"),
                        .combine=rbind,
                        .multicombine=TRUE,
@@ -170,13 +166,13 @@ distPar.me1 <- result.me1 %>%
 
 cat("\n # of individuals from evaluation stages that constitute parental candidate - ME1 \n")
 
-print(distPar.me1)
+#print(distPar.me1)
 
 
 result.me1 <- subset(result.me1,select = -c(nParCET,nParPYT,nParAYT,nParUYT))
 
 cat("\n Simulated data for mega environment 1 - ME1 \n")
-print(result.me1)
+#print(result.me1)
 
 
 
@@ -188,6 +184,7 @@ print(result.me1)
 # GS is used to advance individuals from CET, PYT, AYT, and UYT
 
 result.me2 <- foreach(REP=1:nSimRun,
+                       .errorhandling="remove",
                        .packages=c("AlphaSimR","ASRgenomics", "AGHmatrix","asreml"),
                        .combine=rbind,
                        .multicombine=TRUE,
@@ -223,13 +220,13 @@ distPar.me2 <- result.me2 %>%
         dplyr::select(simRun,year,scenario,nParCET,nParPYT,nParAYT,nParUYT)
 
 cat("\n # of individuals from evaluation stages that constitute parental candidate - ME2 \n")
-print(distPar.me2)
+#print(distPar.me2)
 
 result.me2 <- subset(result.me2,select = -c(nParCET,nParPYT,nParAYT,nParUYT))
 
 
 cat("\n Simulated data for mega environment 2 - ME2 \n")
-print(result.me2)
+#print(result.me2)
 
 
 

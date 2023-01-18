@@ -3,6 +3,18 @@
 for(year in (burninYears+1):nCycles){
   # Desired number of years of a future breeding program
   cat("\n Advance breeding with conventional breeding strategy year:",year,"of", burninYears+futureYears,"\n")
+
+
+  # Update and recycle parents in the crossing block before advancing materials
+  parents <- selectInd(pop=c(UYT,AYT),nInd=25,
+                       use="pheno",simParam=SP)
+
+  # number of trials by stages in the parental candidate
+  nParCET[year] <- NA
+  nParPYT[year] <- NA
+  nParAYT[year] <- sum(parents@id %in% AYT@id)
+  nParUYT[year] <- sum(parents@id %in% UYT@id)
+
   
   # select the best variety for release
 
@@ -60,18 +72,6 @@ for(year in (burninYears+1):nCycles){
 
   # Seedling Nursery (SDN)
   SDN <- setPheno(pop=F1, varE=errVarSDN,reps=repSDN,p=0.5,simParam=SP)
-
-  # Update and recycle parents in the crossing block
-  parents <- selectInd(pop=c(UYT,AYT),nInd=25,
-                       use="pheno",simParam=SP)
-
-
- # number of trials by stages in the parental candidate
-  nParCET[year] <- NA
-  nParPYT[year] <- NA
-  nParAYT[year] <- sum(parents@id %in% AYT@id)
-  nParUYT[year] <- sum(parents@id %in% UYT@id)
-
 
   # Crossing block - Make crosses to generate new population
   F1 <- randCross(pop=parents, nCrosses=nCrosses,

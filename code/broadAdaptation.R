@@ -5,12 +5,12 @@
 # information is limited
 # GS is used to advance from CET, PYT, AYT, and UYT
 
-# Train genomic selection (GS) model and safe the model fit
+for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
+  cat("Advancing breeding with broad-adaptation program
+      strategy year:",year,"of", nCycles, "\n")
 
-# invoke gsModel function to fit GBLUP model
-  gebv <- gsModel(snpsMarker=snps,datName=phenoDat)
 
-# assign ebv to the population from GBLUP model
+  gebv <- gsModel(snpsMarker=trainRec$genoBA,datName=trainRec$phenoBA)
 
   # assign ebv to the population from GBLUP model
   CET@ebv <- as.matrix(gebv[CET@id])
@@ -18,10 +18,16 @@
   AYT@ebv <- as.matrix(gebv[AYT@id])
   UYT@ebv <- as.matrix(gebv[UYT@id])
 
-  print(UYT@ebv)
-for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
-  cat("Advancing breeding with broad-adaptation program
-      strategy year:",year,"of", nCycles, "\n")
+
+  # recycle new parent
+  parSelCand <- c(UYT,AYT,PYT,CET)
+  parents <- selectInd(pop=parSelCand, nInd=nInd(parents), use="ebv",simParam=SP)
+
+  # number of trials by stages in the parental candidate
+  nParCET[year] <- sum(parents@id %in% CET@id)
+  nParPYT[year] <- sum(parents@id %in% PYT@id)
+  nParAYT[year] <- sum(parents@id %in% AYT@id)
+  nParUYT[year] <- sum(parents@id %in% UYT@id)
 
 
   # Selection accuracy from UYT	lines for variety release
@@ -78,6 +84,10 @@ for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
   SDN <- setPheno(pop=F1, varE=errVarSDN, reps=repSDN, fixEff=year,
                   p=0.5, simParam=SP)
 
+  
+  # crossing block
+  F1 <- randCross(pop=parents, nCrosses=nCrosses, nProgeny=nProgeny, simParam=SP)
+
 
   # Save mean and variance of genetic values
   # to track progress of breeding program
@@ -100,33 +110,6 @@ for(year in (burninYears+1):nCycles){ # beginning of Genomic Selection
                                        simParam=SP))
   # remove duplicates individuals from genotyping
   trainRec$genoBA <- trainRec$genoBA[!duplicated(rownames(trainRec$genoBA)),]
-
-  phenoDat <- trainRec$phenoBA
-  snps <- trainRec$genoBA  
-
-  # Train genomic selection (GS) model and safe the model fit
-  gebv <- gsModel(snpsMarker=snps,datName=phenoDat) # invoke gsModel function to fit GBLUP model
-
-  # assign ebv to the population from GBLUP model
-  CET@ebv <- as.matrix(gebv[CET@id])
-  PYT@ebv <- as.matrix(gebv[PYT@id])
-  AYT@ebv <- as.matrix(gebv[AYT@id])
-  UYT@ebv <- as.matrix(gebv[UYT@id])
-
-  # recycle new parent
-   parSelCand <- c(UYT,AYT,PYT,CET)
-   #parSelCand@ebv <- as.matrix(gebv[parSelCand@id,])
-   parents <- selectInd(pop=parSelCand, nInd=nInd(parents), use="ebv",simParam=SP)
-
-
-  # number of trials by stages in the parental candidate
-  nParCET[year] <- sum(parents@id %in% CET@id)
-  nParPYT[year] <- sum(parents@id %in% PYT@id)
-  nParAYT[year] <- sum(parents@id %in% AYT@id)
-  nParUYT[year] <- sum(parents@id %in% UYT@id)
-
-  # crossing block
-  F1 <- randCross(pop=parents, nCrosses=nCrosses, nProgeny=nProgeny, simParam=SP)
 
 } # end loop
 

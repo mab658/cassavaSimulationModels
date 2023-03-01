@@ -84,8 +84,14 @@ gsBroad <- function(REP){
 } # end error
 ) # close tryCatch() for UYT
 
+	  # Generate the pvals for this year
+	  allLocPvals <- numeric(9)
+  for (loc in 1:9){
+	  allLocPvals[loc] <- runif(1, pvalRange[loc, 1], pvalRange[loc, 2])
+	  }
+	  
   # Invoke the function to phenotype selected UYT clones in 8 locations
-  UYTrec <- gxeSim(pval1 = 0.1, pval2 = 0.9, pop = UYT,
+  UYTrec <- gxeSim(pvalVec=allLocPvals[-5], pop = UYT,
                 varE = errVarUYT, nreps = repUYT,nLocs = 8)
   UYT <- UYTrec[[1]]
 

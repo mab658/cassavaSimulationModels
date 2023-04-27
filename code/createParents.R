@@ -11,7 +11,7 @@ founderGenomes <- runMacs2(nInd=nParents,
                        #genLen=1.43, # genetic length (M)
                        #mutRate = 2.5e-08,
                        inbred= FALSE,
-                       #species = "GENERIC",
+                       species = "GENERIC",
                        ploidy = 2L
 )
 
@@ -53,8 +53,9 @@ SP$restrSegSites(nQTL, nSNP, overlap=FALSE) # maxQTL=nQTL and maxSNp=nSNP
 
 SP$addSnpChip(nSnpPerChr=nSNP)
 
+
 SP$addTraitADG(nQtlPerChr=nQTL, 
-		gamma=TRUE,shape=2,
+		mean=genMean,var=varGen,
               	meanDD=ddMean,varDD=ddVar,
               	varGxE=varGxE)
 

@@ -1,5 +1,5 @@
 # function to fit Variance component estimate model BLUP model
-# To estimate broad-sense heritability at UYT stage in conventional breeding scheme
+
 
 varModel <- function(METdat){
 # Model fit to estimate variance component for heritability estimate

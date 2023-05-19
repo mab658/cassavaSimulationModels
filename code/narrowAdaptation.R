@@ -25,7 +25,7 @@ gsNarrow  <- function(REP,ME,pvalUYT,locUYT,
                 # The number of years retained is 5.
 
 		if(ME == "ME1"){
-			pval=0.36
+			pval=0.64
 			if(year == (burninYears+1)){
                         	# phenotyping and genotyping indvs in TP set(PYT, AYT, UYT)
  		               	trainRec$phenoNA <- rbind(PYTrec[[2]][PYTrec[[2]]$loc=="L7",],
@@ -34,7 +34,7 @@ gsNarrow  <- function(REP,ME,pvalUYT,locUYT,
 
                 		trainRec$genoNA <- pullSnpGeno(pop = c(PYT, AYT, UYT), simParam = SP)
 
-                	} else if(year > (burninYears+1) && year <= (burninYears+5)){
+                	} else if(year > (burninYears+1) && year <= nCycles){
                         	# update Training population
 				trainRec$phenoNA <- rbind(trainRec$phenoNA,
                        		PYTrec[[2]][PYTrec[[2]]$loc=="L7",],
@@ -42,20 +42,11 @@ gsNarrow  <- function(REP,ME,pvalUYT,locUYT,
                        		UYTrec[[2]][UYTrec[[2]]$loc %in% c("L6","L7","L8","L9"),])
 
 	                	trainRec$genoNA <- rbind(trainRec$genoNA,pullSnpGeno(pop=c(PYT, AYT, UYT),simParam=SP))
-                	} else {
-				temp <- rbind(PYTrec[[2]][PYTrec[[2]]$loc=="L7",],
-                                                AYTrec[[2]][AYTrec[[2]]$loc %in% c("L6","L7"),],
-                                                UYTrec[[2]][UYTrec[[2]]$loc %in% c("L6","L7","L8","L9"),])
-
-				trainRec$phenoNA <- rbind(trainRec$phenoNA[-(1:(nInd(PYT) +  nInd(AYT)*2 + nInd(UYT)*4)),],temp)
-                	
-				trainRec$genoNA <- rbind(trainRec$genoNA[-(1:nInd(c(PYT,AYT,UYT))),],
-                        		pullSnpGeno(pop = c(PYT, AYT, UYT), simParam = SP))
-                        } # end else
+                	} # end elseif
 
 
 		} else if(ME == "ME2"){ # Mega-environmet 2
-			pval=0.64
+			pval=0.36
 			if(year == (burninYears+1)){
                                 # phenotyping and genotyping indvs in TP set (PYT,AYT, UYT)
                                 trainRec$phenoNA <- rbind(PYTrec[[2]][PYTrec[[2]]$loc=="L3",],
@@ -64,7 +55,7 @@ gsNarrow  <- function(REP,ME,pvalUYT,locUYT,
 
                                 trainRec$genoNA <- pullSnpGeno(pop = c(PYT, AYT, UYT), simParam = SP)
 
-			} else if(year > (burninYears+1) && year <= (burninYears+5)){
+			} else if(year > (burninYears+1) && year <= nCycles){
                        
                         	# update the training population
                         	trainRec$phenoNA <- rbind(trainRec$phenoNA,
@@ -74,18 +65,9 @@ gsNarrow  <- function(REP,ME,pvalUYT,locUYT,
 
                         	trainRec$genoNA <- rbind(trainRec$genoNA,pullSnpGeno(pop=c(PYT, AYT, UYT),simParam=SP))
 
-			} else {
-                        	temp <- rbind(PYTrec[[2]][PYTrec[[2]]$loc=="L3",],
-                                                AYTrec[[2]][AYTrec[[2]]$loc %in% c("L3","L4"),],
-                                                UYTrec[[2]][UYTrec[[2]]$loc %in% c("L1","L2","L3","L4"),])
+			} # end elseif
 
-                        	trainRec$phenoNA <- rbind(trainRec$phenoNA[-(1:(nInd(PYT) +  nInd(AYT)*2 + nInd(UYT)*4)),],temp)
-
-                        	trainRec$genoNA <- rbind(trainRec$genoNA[-(1:nInd(c(PYT,AYT,UYT))),],
-                        		pullSnpGeno(pop = c(PYT, AYT, UYT), simParam = SP))
-                        }
-
-        	} # end if for Mega-environment 2
+        	} # end if Mega-environment 2
 
 		# invoke gsModel function to fit GBLUP model
         	modelParms <- gsModel(snpsMarker = trainRec$genoNA, pheno  = trainRec$phenoNA)
@@ -98,8 +80,8 @@ gsNarrow  <- function(REP,ME,pvalUYT,locUYT,
                 UYT@ebv <- as.matrix(modelParms[[1]][UYT@id])
 
 		if (any(is.na(PYT@ebv))){
-                        fileName <- paste0("Missing_PYT_rep", REP, "_year", year, ".rds")
-                        saveRDS(mget(ls()), fileName)
+                        #fileName <- paste0("Missing_PYT_rep", REP, "_year", year, ".rds")
+                        #saveRDS(mget(ls()), fileName)
                         PYT <- PYT[!is.na(PYT@ebv)] # remove missing value
                 }
 
@@ -170,7 +152,8 @@ gsNarrow  <- function(REP,ME,pvalUYT,locUYT,
     		# Clonal Evaluation Trial (CET) - Implement GS
     		# Select individuals from the SDN stage based on phenotype performance
 
-    		CET <- selectWithinFam(pop = SDN, nInd = 10, trait = 1, use = "pheno", simParam = SP)
+                accSDN[year] <- cor(gvADG(SDN,pval), pheno(SDN))
+    		CET <- selectWithinFam(pop = SDN, nInd = famSize, trait = 1, use = "pheno", simParam = SP)
     		CETrec <- gxeSim(pvalVec = allLocPvals[5], pop = CET,
                      	varE=errVarCET,nreps=repCET,locID = 5,year=year)
     
@@ -207,6 +190,7 @@ gsNarrow  <- function(REP,ME,pvalUYT,locUYT,
 	 	h2=h2,
 	 	H2=H2,
 
+		accSDN=accSDN,
          	accCET=accCET,
          	accPYT=accPYT,
          	accAYT=accAYT,

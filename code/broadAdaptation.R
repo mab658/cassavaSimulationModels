@@ -20,7 +20,7 @@ gsBroad <- function(REP){
 		
 
 		# Constitute the training population (TP) using PYT, AYT, and UYT 
-        	# with a sliding-window process of 5 year.
+        	# with a sliding-window process of 10 year.
         	# Accumulation of the records starts a year after  burn-in year
 	        # the sliding-window process removes the oldest data
         	# The number of years retained is 5.
@@ -31,7 +31,7 @@ gsBroad <- function(REP){
                 	trainRec$phenoBA <- rbind(PYTrec[[2]], AYTrec[[2]],UYTrec[[2]])
                 	trainRec$genoBA <- pullSnpGeno(pop=c(PYT, AYT, UYT), simParam=SP)
 
-		} else if(year > (burninYears+1) && year <= (burninYears+5)){
+		} else if(year > (burninYears+1) && year <= nCycles){
 
 			# update TP for broad adaptation program
                 	temp <- rbind(PYTrec[[2]],AYTrec[[2]],UYTrec[[2]])
@@ -39,16 +39,8 @@ gsBroad <- function(REP){
                 	trainRec$phenoBA <- rbind(trainRec$phenoBA,temp)
        		 	trainRec$genoBA <- rbind(trainRec$genoBA,
                      		pullSnpGeno(pop=c(PYT, AYT, UYT),simParam=SP))
-		} else {
-				temp <- rbind(PYTrec[[2]], AYTrec[[2]], UYTrec[[2]])
-				trainRec$phenoBA <- rbind(trainRec$phenoBA[-(1:(nInd(PYT)*2 +
-                                        nInd(AYT)*4 + nInd(UYT)*8)),],temp)
+		} # end else if
 
-                		trainRec$genoBA <- rbind(trainRec$genoBA[-(1:nInd(c(PYT,AYT,UYT))),],
-                		pullSnpGeno(pop = c(PYT, AYT, UYT), simParam = SP))
-			}
-
-		#write.csv(trainRec$phenoBA,file=paste0("trainRecPhenoBA",year,".csv"), row.names=FALSE)
 
 		# train the GBLUP model for genomic prediction
         	modelParms <- gsModel(snpsMarker = trainRec$genoBA,pheno = trainRec$phenoBA)
@@ -71,8 +63,8 @@ gsBroad <- function(REP){
                 parSelCand <- c(UYT,AYT,PYT)
 
                 if (any(is.na(parSelCand@ebv))){
-                        fileName <- paste0("Missing_parentEBV_rep", REP, "_year", year, ".rds")
-                        saveRDS(mget(ls()), fileName)
+                        #fileName <- paste0("Missing_parentEBV_rep", REP, "_year", year, ".rds")
+                        #saveRDS(mget(ls()), fileName)
                         parSelCand <- parSelCand[!is.na(parSelCand@ebv)] # remove missing value
                 }
 
@@ -133,7 +125,8 @@ gsBroad <- function(REP){
 
   
   		# Clonal Evaluation Trial (CET) - Implement GS
-
+		
+		accSDN[year] <-  cor(gv(SDN), pheno(SDN))
    		CET <- selectWithinFam(pop = SDN, nInd = famSize, trait = 1, use = "pheno", simParam = SP)
   		#Invoke the function to phenotype selected SDNclones in 1 locations
   		CETrec <- gxeSim(pvalVec=allLocPvals[5], pop = CET,
@@ -175,6 +168,7 @@ gsBroad <- function(REP){
 		h2=h2,
  		H2=H2,
 
+		accSDN=accSDN,
  		accCET=accCET,
  		accPYT=accPYT,
      		accAYT=accAYT,

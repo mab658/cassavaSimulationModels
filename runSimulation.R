@@ -3,7 +3,6 @@ rm(list = ls())
 
 # setwd("/Users/mab658/Documents/cassavaSimulationModels")
 
-
 # list of required packages
 packages_used <- c("AlphaSimR", "ASRgenomics", "AGHmatrix", "asreml",
 "tidyverse","parallel", "tidyr","tibble","ggplot2","ggpubr")
@@ -76,22 +75,25 @@ varG_ADG <- function(pop, pval){
 # long enough to complete a couple breeding cycles so that the parents
 # are at least a couple generations removed from the founders
 
-nSimRun <- 20  # Number of simulation repetitions
+nSimRun <- 50  # Number of simulation repetitions
 
 # executing burnin-phase for a number of simulation replicates (nSimRun)
+
 for(REP in 1:nSimRun){
 	cat("\n Simulation run:",REP,"of", nSimRun,"replications", "\n")
 
-  	# Run 20 years of burn-in by advancing years of breeding
+  	# Run burn-in phase by advancing years of breeding
   	source("./code/burnin.R") # advance evaluation stages by years
 }
-
 
 
 # add the simulation parameters to readMe
 addToREADME(c(
 	paste("The simulation parameters used in this study include:"),
+	paste("The number of cores allocated for the simulation job on the server is", mc.cores),
 	paste("The number of simulation replicates is", nSimRun),
+	paste("The number of breeding cycle in burnin phase is", burninYears),
+	paste("The number of breeding cycle in future evaluation phase is", futureYears),
 	paste("The number of parental founders for the simulation is", nParents),
  	paste("The number of crosses is", nCrosses),
 	paste("The number of progeny per cross is", nProgeny),
@@ -99,15 +101,13 @@ addToREADME(c(
   	paste("There are", nQTL, "QTL per chromosome"),
         paste("There are", nSNP, "SNPS chips per chromosome"),
 	paste("There are", nQTL+nSNP, "segregating sites per chromosome"),
+
 	paste("Mean oF additive effect is", genMean),
 	paste("Variance of additive effect is", varGen),
 	paste("Mean of dominance degree is", ddMean),
 	paste("Variance of dominance degree  is", ddVar),
 	paste("Variance of GxE is", varGxE),"")
  )# end readme parameter list
-
-
-
 
 # Evaluation phase of different breeding scenarios
 # mclapply splits these iterations into multiple processes
@@ -120,9 +120,9 @@ addToREADME(c(
 # GS is used to advance from CET, PYT, AYT, and UYT
 
 
-
 # set the seed for reproducible result
 set.seed(1234, kind = "L'Ecuyer-CMRG")
+
 
 #  Scenario 1: conventional breeding program
 
@@ -132,16 +132,14 @@ result.conv <- do.call(rbind,mclapply(1:nSimRun, FUN = baseMod,
 
 print(result.conv)
 
-
 # The broad  adaptation breeding program
 # with GS estimates BV at CET to late stage based on genomic data to boost
 # the selection accuracy at this early stage where phenotype
 # information is limited
 # GS is used to advance from CET, PYT, AYT, and UYT
 
-# Scenario 2: Broad adaptation breeding program
 
-set.seed(1234, kind = "L'Ecuyer-CMRG")
+# Scenario 2: Broad adaptation breeding program
 
 result.broad <- do.call(rbind,mclapply(1:nSimRun, FUN=gsBroad,
 	mc.preschedule = TRUE,mc.set.seed = TRUE, 
@@ -158,11 +156,10 @@ print(result.broad)
 # information is limited
 # GS is used to advance from CET, PYT, AYT, and UYT
 
-set.seed(1234, kind = "L'Ecuyer-CMRG")
 result.me1 <- do.call(rbind,mclapply(1:nSimRun,
 	FUN = gsNarrow,ME = "ME1",
     	pvalUYT = allLocPvals[c(6,7,8,9)],locUYT= c(6,7,8,9),
-	pvalAYT = allLocPvals[c(6, 7)], locAYT= c(6, 7),
+	pvalAYT = allLocPvals[c(6,7)], locAYT= c(6,7),
     	pvalPYT = allLocPvals[7], locPYT = 7,
 	mc.preschedule = TRUE, mc.set.seed = TRUE, 
 	mc.cores = mc.cores, mc.silent = FALSE))
@@ -180,7 +177,6 @@ print(result.me1)
 
 cat("\n Modeling scenario 3 narrow adaptation - ME2 enabled GS \n")
 
-set.seed(1234, kind = "L'Ecuyer-CMRG")
 result.me2 <- do.call(rbind,mclapply(1:nSimRun,
 	FUN = gsNarrow,ME = "ME2",
     	pvalUYT = allLocPvals[c(1, 2, 3, 4)], locUYT= c(1,2,3,4),
@@ -199,6 +195,7 @@ simData <- rbind(result.conv,result.broad,result.me1,result.me2)
 
 
 # rescale cycle year so that last burnin year is zero
+
 #simData$year <- -(burninYears-1):burninYears # for equal years of burnin and future phase
 simData$year <- -(burninYears-1):(burninYears-10) # rescale cycle= 20 burnin + 10 future
 
@@ -208,10 +205,9 @@ saveRDS(simData,file=paste0("./data/simData",".rds"))
 write.csv(simData,file=paste0("./data/simDataGxE",varGxE,".csv"),row.names=FALSE)
 
 
-
 # compute genetic parameters from selection cycles of the simulated data
 simSumm <- simData %>%
-	dplyr::select(-c(nParCET,nParPYT,nParAYT,nParUYT)) %>%
+	dplyr::select(-c(nParPYT,nParAYT,nParUYT)) %>%
   	dplyr::filter(year >= 0) %>%
   	group_by(scenario,year) %>%
   	dplyr::summarise(
@@ -255,12 +251,11 @@ cat("Rate of genetic gain per year for narrow adaptation breeding program is",
 unlink("./data/bu*.rda")
 
 
-
 # plot distribution of the number of individuals that constitute the parental candidate
 
 parCount <- simData %>%
         dplyr::filter(year > 0) %>%
-        dplyr::select(simRun,year,scenario,nParCET,nParPYT,nParAYT,nParUYT) %>%
+        dplyr::select(simRun,year,scenario,nParPYT,nParAYT,nParUYT) %>%
 	gather(key = stage,value = nPar,-c(simRun,year,scenario))
 
 parCount$scenario <- factor(parCount$scenario,
@@ -269,8 +264,8 @@ parCount$scenario <- factor(parCount$scenario,
 
 
 parCount$stage <- factor(parCount$stage,
-	levels = c("nParCET","nParPYT","nParAYT","nParUYT"),
-        labels=c("CET","PYT","AYT","UYT"))
+	levels = c("nParPYT","nParAYT","nParUYT"),
+        labels=c("PYT","AYT","UYT"))
 
 distParCand  <- ggplot(data = parCount, aes(x=scenario,y=nPar, fill=stage)) +
 	geom_boxplot( stat = "boxplot",  outlier.colour = "red", outlier.shape=16,
@@ -288,7 +283,7 @@ ggsave("./output/distParentalCandidate.jpeg",height=4.5, width=6.5, units="in", 
 # A scatter plot of rate of average genetic value and cycle-year with regression equation line
 
 rateGenGain <- ggplot(data=simSumm[simSumm$year>0,], aes(x = year, y = genMean,color=scenario)) +
-	geom_point() + labs(x="Cycle",y="Genetic mean")+
+	geom_point() + labs(x="Cycles of selection",y="Genetic mean")+
   	stat_smooth(aes(fill = scenario, color = scenario), method = "lm", se=FALSE,
       	formula = y ~ poly(x, 1, raw = TRUE)) +
   	stat_regline_equation(
@@ -310,7 +305,7 @@ genMeanPlot <- ggplot(data = simSumm,aes(x = year,y = genMean, color = scenario)
   	guides(scale = "none")+
   	theme_bw()+ theme(legend.position = c(0.03,0.98),
         legend.justification = c("left","top"))+
-  	scale_x_continuous("Cycle",limits = c(0,futureYears))+
+  	scale_x_continuous("Cycles of selection",limits = c(0,futureYears))+
   	scale_y_continuous("Genetic mean",limits = c(0,NA))
 
 # print(genMeanPlot)
@@ -328,7 +323,7 @@ genVarPlot <- ggplot(data = simSumm,aes(x = year,y = genVar,color = scenario))+ 
   	guides(scale = "none")+
   	theme_bw()+ theme(legend.position = c(0.03,0.05),
         legend.justification = c("left","bottom"))+
-  	scale_x_continuous("Cycle",limits=c(0,futureYears))+
+  	scale_x_continuous("Cycles of selection",limits=c(0,futureYears))+
   	scale_y_continuous("Genetic variance",limits=c(0,NA))
 
 # print(genVarPlot)
@@ -342,7 +337,7 @@ ggsave("./output/geneticVariance.jpeg",height = 4.5, width = 6.5, units = "in", 
 
 selAccur <- simData %>%
 	dplyr::filter(year>0) %>%
-	dplyr::select(simRun, year,scenario,accCET,accPYT,accAYT,accUYT) %>%
+	dplyr::select(simRun, year,scenario,accSDN,accCET,accPYT,accAYT,accUYT) %>%
   	gather(key = stage,value = accur,-c(simRun,year,scenario))
 
 selAccur$scenario <- factor(selAccur$scenario,
@@ -350,8 +345,8 @@ selAccur$scenario <- factor(selAccur$scenario,
 	labels=c("Conventional","Broad adaptation", "Narrow adaptation"))
 
 selAccur$stage <- factor(selAccur$stage,
-        levels = c("accCET","accPYT","accAYT","accUYT"),
-        labels = c("CET","PYT","AYT","UYT"))
+        levels = c("accSDN","accCET","accPYT","accAYT","accUYT"),
+        labels = c("SDN","CET","PYT","AYT","UYT"))
 
 distSelAccur <- ggplot(data = selAccur, aes(x = scenario,y = accur, fill = stage)) +
 	geom_boxplot( stat = "boxplot",  outlier.colour = "red", outlier.shape = 16,
@@ -371,6 +366,7 @@ selAccur <- simData %>%
 	dplyr::filter(year>0) %>%
   	group_by(scenario) %>%
   	dplyr::summarise(
+		accSDN=mean(accSDN),
     		accCET=mean(accCET),
     		accPYT=mean(accPYT),
     		accAYT=mean(accAYT),
@@ -382,8 +378,8 @@ selAccur <- simData %>%
                 labels = c("Conventional","Broad adaptation","Narrow adaptation"))
 
 	selAccur$stage <- factor(selAccur$stage,
-                levels = c("accCET","accPYT","accAYT","accUYT"),
-                labels=c("CET","PYT","AYT","UYT"))
+                levels = c("accSDN","accCET","accPYT","accAYT","accUYT"),
+                labels=c("SDN","CET","PYT","AYT","UYT"))
 
 # print(selAccur)
 
@@ -403,14 +399,14 @@ ggsave("./output/selAccuracyMean.jpeg",height=4.2, width=6.5, units="in", dpi=30
 
 selAccurPlot <- ggplot(data=simSumm,aes(x=year,y=selAccur,color=scenario))+
   geom_point()+
-  geom_line(size=1)+
+  geom_line(linewidth = 1)+
   geom_errorbar(aes(ymin=selAccur-seAccur, ymax=selAccur+seAccur), width=0.2,
                 position=position_dodge(0.05))+
   guides(scale="none")+
   theme_bw()+
   theme(legend.position = c(0.95,0.10),
         legend.justification = c("right","bottom"))+
-  scale_x_continuous("Year",limits=c(0,futureYears))+
+  scale_x_continuous("Cycles of selection",limits=c(0,futureYears))+
   scale_y_continuous("Selection accuracy",limits=c(0,NA))
 
 # print(selAccurPlot)
@@ -420,19 +416,19 @@ ggsave("./output/selectionAccuracyTrend.jpeg",height=4.2, width=6.5, units="in",
 
 
 
-# plot Mean of heritability
-meanH2 <- simData %>%
+# plot both  narrow and broad-sense  heritability
+heritab <- simData %>%
   dplyr::filter(year>0) %>%
   group_by(scenario) %>%
   dplyr::summarise(h2=mean(h2, na.rm=TRUE),H2 =mean(H2),.groups = 'drop') %>%
   gather(key = heritability,value = estimate,-c(scenario))
 
-meanH2$scenario <- factor(meanH2$scenario,
+heritab$scenario <- factor(heritab$scenario,
                           levels = c("Conv","Broad adaptation","Narrow adaptation"),
                           labels = c("Conventional","Broad adaptation","Narrow adaptation"))
 
 
-HeritPlot <- ggplot(data = meanH2,aes(x = scenario,y = estimate,fill = heritability)) +
+heritabPlot <- ggplot(data = heritab,aes(x = scenario,y = estimate,fill = heritability)) +
   geom_bar(stat = "identity", position = "dodge")+
   geom_text(aes(x = scenario,y = estimate,label = round(estimate,2)),
             position = position_dodge(width = 0.9),vjust=-0.25)+
@@ -441,7 +437,25 @@ HeritPlot <- ggplot(data = meanH2,aes(x = scenario,y = estimate,fill = heritabil
                       labels = c("Narrow-sense", "Broad-sense"))
 
 
-#print(HeritPlot)
+#print(heritabPlot)
 
  # save the plot to a file
 ggsave("./output/heritabEstimate.jpeg",height=4.5, width=6.5, units="in", dpi=300)
+
+broadH2 <- heritab %>%
+  dplyr::filter(heritability=="H2")
+
+H2Plot <- ggplot(data = broadH2,aes(x = scenario,y = estimate,fill = scenario)) +
+        geom_bar(stat = "identity", position = "dodge")+
+        geom_text(aes(x = scenario,y = estimate,label = round(estimate,2)),
+        position = position_dodge(width = 0.9),vjust=-0.25)+
+        labs(x = "Breeding strategy", y = "Heritability estimate")
+
+
+#print(H2Plot)
+# save the plot to a file
+ggsave("./output/broad_SenseH2Summary.jpeg",height = 4.5, width = 6.5, units = "in", dpi = 300)
+
+addToREADME(c(
+        paste("The total time for running the simulation is ",(end.time - start.time))
+))

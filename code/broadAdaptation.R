@@ -22,23 +22,22 @@ gsBroad <- function(REP){
 		# Constitute the training population (TP) using PYT, AYT, and UYT 
         	# with a sliding-window process of 10 year.
         	# Accumulation of the records starts a year after  burn-in year
-	        # the sliding-window process removes the oldest data
-        	# The number of years retained is 5.
+	        # until last year of future phase amounts to 10-year data
 
 		if(year == (burninYears+1)){
 
                 	# phenotyping and genotyping indvs in TP set for broad adaptation
-                	trainRec$phenoBA <- rbind(PYTrec[[2]], AYTrec[[2]],UYTrec[[2]])
-                	trainRec$genoBA <- pullSnpGeno(pop=c(PYT, AYT, UYT), simParam=SP)
+                	trainRec$phenoBA <- rbind(CETrec[[2]],PYTrec[[2]], AYTrec[[2]],UYTrec[[2]])
+                	trainRec$genoBA <- pullSnpGeno(pop=c(CET,PYT, AYT, UYT), simParam=SP)
 
 		} else if(year > (burninYears+1) && year <= nCycles){
 
 			# update TP for broad adaptation program
-                	temp <- rbind(PYTrec[[2]],AYTrec[[2]],UYTrec[[2]])
+                	temp <- rbind(CETrec[[2]],PYTrec[[2]],AYTrec[[2]],UYTrec[[2]])
 
-                	trainRec$phenoBA <- rbind(trainRec$phenoBA,temp)
-       		 	trainRec$genoBA <- rbind(trainRec$genoBA,
-                     		pullSnpGeno(pop=c(PYT, AYT, UYT),simParam=SP))
+                	trainRec$phenoBA <- rbind(trainRec$phenoBA[-(1:nInd(CET)),],temp)
+       		 	trainRec$genoBA <- rbind(trainRec$genoBA[-(1:nInd(CET)),],
+                     		pullSnpGeno(pop=c(CET,PYT, AYT, UYT),simParam=SP))
 		} # end else if
 
 
@@ -48,23 +47,24 @@ gsBroad <- function(REP){
 		# select new parents for recycling in the next cycle
                 # Use GP model to assign gebv to individuals in the breeding population
 
+		CET@ebv <- as.matrix(modelParms[[1]][CET@id])
                 PYT@ebv <- as.matrix(modelParms[[1]][PYT@id])
                 AYT@ebv <- as.matrix(modelParms[[1]][AYT@id])
                 UYT@ebv <- as.matrix(modelParms[[1]][UYT@id])
 
 
-		if (any(is.na(PYT@ebv))){
-                        fileName <- paste0("Missing_PYT_rep", REP, "_year", year, ".rds")
+		if (any(is.na(CET@ebv))){
+                        fileName <- paste0("Missing_CET_rep", REP, "_year", year, ".rds")
                         saveRDS(mget(ls()), fileName)
-                        PYT <- PYT[!is.na(PYT@ebv)] # remove missing value
+                        CET <- CET[!is.na(CET@ebv)] # remove missing value
                 }
 
 		# constitute parental selection candidate and select based on GEBV for next cycle
-                parSelCand <- c(UYT,AYT,PYT)
+                parSelCand <- c(CET,UYT,AYT,PYT)
 
                 if (any(is.na(parSelCand@ebv))){
-                        #fileName <- paste0("Missing_parentEBV_rep", REP, "_year", year, ".rds")
-                        #saveRDS(mget(ls()), fileName)
+                        fileName <- paste0("Missing_parentEBV_rep", REP, "_year", year, ".rds")
+                        saveRDS(mget(ls()), fileName)
                         parSelCand <- parSelCand[!is.na(parSelCand@ebv)] # remove missing value
                 }
 
@@ -72,19 +72,22 @@ gsBroad <- function(REP){
                 parents <- selectInd(pop = parSelCand, nInd = nParents,trait = 1, use = "ebv",simParam = SP)
 
                 # number of individuals constitute parental candidates per trial stage
-                nParPYT[year] <- sum(parents@id %in% PYT@id)
+  
+		nParCET[year] <- sum(parents@id %in% CET@id)
+	        nParPYT[year] <- sum(parents@id %in% PYT@id)
                 nParAYT[year] <- sum(parents@id %in% AYT@id)
                 nParUYT[year] <- sum(parents@id %in% UYT@id)
 
 
 		# Assign GETGV to the population from GP model as surrogates of selection values
-                #PYT@ebv <- as.matrix(modelParms[[3]][PYT@id])
-                #AYT@ebv <- as.matrix(modelParms[[3]][AYT@id])
-                #UYT@ebv <- as.matrix(modelParms[[3]][UYT@id])
+		CET@ebv <- as.matrix(modelParms[[3]][CET@id])
+                PYT@ebv <- as.matrix(modelParms[[3]][PYT@id])
+                AYT@ebv <- as.matrix(modelParms[[3]][AYT@id])
+                UYT@ebv <- as.matrix(modelParms[[3]][UYT@id])
 
 		# Assign p-value as environmental covariate for each location
   		for (loc in 1:9){
-       			allLocPvals[loc] <- runif(1, pvalRange[loc, 1], pvalRange[loc, 2])
+       			allLocPvals[loc] <- pnorm(runif(1, eCovRange[loc,1], eCovRange[loc,2]))
   		}  
 
   		# Selecting variety for release from late stage of evaluation
@@ -116,7 +119,7 @@ gsBroad <- function(REP){
 
   		# Preliminary  Yield  Trial (PYT) - use GETGV to select the best CET lines to  PYT
 		accCET[year] <-  cor(gv(CET), pheno(CET))
-  		PYT <- selectInd(pop = CET, nInd = nPYT, use = "pheno", simParam = SP)
+  		PYT <- selectInd(pop = CET, nInd = nPYT, use = "ebv", simParam = SP)
 
  		 # Invoke the function to phenotype selected PYT clones in 2 locations
   		PYTrec <- gxeSim(pvalVec=allLocPvals[c(3,7)],pop = PYT,
@@ -149,8 +152,8 @@ gsBroad <- function(REP){
 	  	# to track progress of breeding program at PYT stage
 		# Save mean and variance of genetic values
 
-		meanGV[year] <- meanG(PYT)
-                varGV[year] <- varG(PYT)		
+		meanGV[year] <- meanG(CET)
+                varGV[year] <- varG(CET)
 
 		# heritability estimates
                 h2[year] <- modelParms[[2]] # narrow-sense
@@ -174,11 +177,11 @@ gsBroad <- function(REP){
      		accAYT=accAYT,
      		accUYT=accUYT,
 
+		nParCET=nParCET,
      		nParPYT=nParPYT,
      		nParAYT=nParAYT,
 		nParUYT=nParUYT)
 
 	return(simParms)
-
 } # end of function
 

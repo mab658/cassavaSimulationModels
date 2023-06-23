@@ -13,8 +13,8 @@ nVarietySel <- 4 # Number of variety released
 
 
 # Number of causal sites (QTL) and SNP per each of 18  chrom
-nQTL <- 150 # 18 Chrs x 200 QTLs = 3,600  QTLs causal variants
-nSNP <- 500  # simulate 600 x 18 = 10,800  SNPs chip with 10,800  markers
+nQTL <- 150  # 18 Chrs x 150 QTLs = 2,700  QTLs causal variants
+nSNP <- 500  # simulate 500 x 18 = 9,000  SNPs chip  markers
 
 
 # set the mean and variance of genetic values for additive effect
@@ -29,7 +29,7 @@ ddVar <- 0.10 # Variance dominance degree
 
 # set variance of GxE for trait GxE effect
 #varGxE <- 0
-varGxE <- 10 #(6.5/7.6) * (1/0.438)
+varGxE <- 4 #(19.69/12.22) * (1/0.438)
 
 
 # number of entries per each trial evaluation stages

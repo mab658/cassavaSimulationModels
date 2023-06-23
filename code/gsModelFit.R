@@ -5,7 +5,8 @@ gsModel <- function(snpsMarker,pheno){
 	#  quality control SNPs marker data
   	# remove duplicates individuals from genotyping data
   	snpsMarker <- snpsMarker[!duplicated(rownames(snpsMarker)),]
-  	snpsFilter <- qc.filtering(M=snpsMarker, base=FALSE, ref=NULL,
+  	
+	snpsFilter  <- qc.filtering(M=snpsMarker, base=FALSE, ref=NULL,
         marker.callrate=0.2,ind.callrate=0.2, maf=0.05,heterozygosity=0.95,
         Fis=1, impute=FALSE,  plots=FALSE,message=FALSE)$M.clean
 
@@ -19,28 +20,26 @@ gsModel <- function(snpsMarker,pheno){
   	# Tuning the G-matrix (Gmat) by blending # 
   	G_blend <- G.tuneup(G=G_bend, blend=TRUE, pblend=0.02,message=FALSE)$Gb
 
-  	phenoMean  <- pheno  %>%
-        	group_by(env,gen,stage) %>%
-        	summarise(pheno=mean(pheno,na.rm=T),errVar=mean(errVar,na.rm=T),.groups = 'drop')
+	# get the inverse of blend genomic relationship matrix
+        kinv <<- G.inverse(G = G_blend, sparseform = TRUE,message = FALSE)$Ginv
+	
 
-  	# match individuals phenotyped to genotyped and vice versa
-   	phenoDat <- phenoMean[phenoMean$gen %in% rownames(G_blend),]
-   	#G_blend <- G_blend[rownames(G_blend) %in% phenoDat$gen,]
-  
+	# order the phenotypic data for modeling
+	phenoDat  <- pheno  %>%
+		select(env, gen, stage,pheno, errVar) %>%
+                arrange(env,gen,stage) 
+
 	phenoDat$env <- as.factor(phenoDat$env)
   	phenoDat$gen <- as.factor(phenoDat$gen) # coerce genotype to a factor
   	phenoDat$wt <- 1/phenoDat$errVar
 
-  	# get the inverse of blend genomic relationship matrix
-  	kinv <<- G.inverse(G = G_blend, sparseform = TRUE,message = FALSE)$Ginv
-
   	# Train genomic selection (GS) model and safe the model fit
   	modelFit <- asreml(fixed = pheno~env,
-     		random =~vm(gen,kinv), # model only additive effect through GRM
+     		random =~vm(gen,kinv) + ide(gen), # model only additive effect through GRM
         	residual =~idv(units),
                 weights = wt,
-		na.action=na.method(y='include', x='include'),
-                workspace = 210e07, maxit = 80,data = phenoDat,trace = F)
+		na.action=na.method(x='include'),
+                workspace = 210e07, maxit = 100,data = phenoDat,trace = F)
 
   	# Loop to ensure model converges
   	while (!modelFit$converge) {
@@ -52,38 +51,19 @@ gsModel <- function(snpsMarker,pheno){
 	# estimate of additive  variance component
 	varEst <- summary(modelFit, vparameters=TRUE)$varcomp
 	
-	h2 <- varEst[1,1]/(varEst[1,1]+varEst[2,1]) # narrow-sense heritability
+	h2 <- varEst[1,1]/(varEst[1,1]+varEst[2,1]+varEst[3,1]) # narrow-sense heritability
+	H2 <- (varEst[1,1] + varEst[2,1])/(varEst[1,1]+varEst[2,1]+varEst[3,1]) # Broad-sense heritability
+
   	# extract the genomic estimated breeding value (GEBV)
   	genEff <- summary(modelFit, coef=TRUE)$coef.random
 
 	gebv <- genEff[grep("^vm",rownames(genEff)),1] # GEBV i.e additive genetic effect
-	names(gebv) <- as.numeric(substr(rownames(genEff),start=15,stop=nchar(rownames(genEff))))
+	names(gebv) <- as.numeric(substr(names(gebv),start=15,stop=nchar(names(gebv))))
+
+	# non-additive effect
+	nonAddEff <- genEff[grep("^ide",rownames(genEff)),1] #  i.e nonadditive genetic effect
+        names(nonAddEff) <- as.numeric(substr(names(nonAddEff),start=10,stop=nchar(names(nonAddEff))))
 	
-
-	# Fit linear mixed model to estimate total genetic effect or value
-        modelFit <- asreml(fixed = pheno~1,
-                random =~ idv(gen), # model total genetic effect                        
-                residual =~idv(units),
-                weights = wt,
-                na.action=na.method(y='include', x='include'),
-                workspace = 210e07, maxit = 80,data = phenoDat,trace = F)
-
-        # Loop to ensure model converges
-        while (!modelFit$converge) {
-                modelFit <- update.asreml(modelFit)
-                print("Using update.asreml")
-        }
-
-
-	# estimate of additive  variance component
-        varEst <- summary(modelFit, vparameters=TRUE)$varcomp
-
-	H2 <- varEst[1,1]/(varEst[1,1]+varEst[2,1]) # Broad-sense heritability
-
-	# extract out the  total genetic value (tgv) from the linear mixed model
-        genEff <- summary(modelFit, coef=TRUE)$coef.random
-	egv <- genEff[grep("^gen",rownames(genEff)),1] # non additive estimated  genetic effect (egv)
-	names(egv) <- as.numeric(substr(rownames(genEff),start=5,stop=nchar(rownames(genEff))))
-
+	egv <- gebv + nonAddEff # sum additive and non additive effects
 	return(list(gebv, h2, egv,H2))
 } # end of function

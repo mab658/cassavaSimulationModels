@@ -25,45 +25,49 @@ gsNarrow  <- function(REP,ME,pvalUYT,locUYT,
                 # The number of years retained is 5.
 
 		if(ME == "ME1"){
-			pval=0.64
+			pval=0.78
 			if(year == (burninYears+1)){
                         	# phenotyping and genotyping indvs in TP set(PYT, AYT, UYT)
- 		               	trainRec$phenoNA <- rbind(PYTrec[[2]][PYTrec[[2]]$loc=="L7",],
+ 		               	trainRec$phenoNA <- rbind(CETrec[[2]],PYTrec[[2]][PYTrec[[2]]$loc=="L7",],
                        				AYTrec[[2]][AYTrec[[2]]$loc %in% c("L6","L7"),],
                        				UYTrec[[2]][UYTrec[[2]]$loc %in% c("L6","L7","L8","L9"),])
 
-                		trainRec$genoNA <- pullSnpGeno(pop = c(PYT, AYT, UYT), simParam = SP)
+                		trainRec$genoNA <- pullSnpGeno(pop = c(CET,PYT, AYT, UYT), simParam = SP)
 
                 	} else if(year > (burninYears+1) && year <= nCycles){
                         	# update Training population
-				trainRec$phenoNA <- rbind(trainRec$phenoNA,
+				trainRec$phenoNA <- rbind(trainRec$phenoNA[-(1:nInd(CET)),],
+				CETrec[[2]],
                        		PYTrec[[2]][PYTrec[[2]]$loc=="L7",],
                        		AYTrec[[2]][AYTrec[[2]]$loc %in% c("L6","L7"),],
                        		UYTrec[[2]][UYTrec[[2]]$loc %in% c("L6","L7","L8","L9"),])
 
-	                	trainRec$genoNA <- rbind(trainRec$genoNA,pullSnpGeno(pop=c(PYT, AYT, UYT),simParam=SP))
+	                	trainRec$genoNA <- rbind(trainRec$genoNA[-(1:nInd(CET)),],
+						pullSnpGeno(pop=c(CET,PYT, AYT, UYT),simParam=SP))
                 	} # end elseif
 
 
 		} else if(ME == "ME2"){ # Mega-environmet 2
-			pval=0.36
+			pval=0.30
 			if(year == (burninYears+1)){
                                 # phenotyping and genotyping indvs in TP set (PYT,AYT, UYT)
-                                trainRec$phenoNA <- rbind(PYTrec[[2]][PYTrec[[2]]$loc=="L3",],
+                                trainRec$phenoNA <- rbind(CETrec[[2]],PYTrec[[2]][PYTrec[[2]]$loc=="L3",],
                                                 AYTrec[[2]][AYTrec[[2]]$loc %in% c("L3","L4"),],
                                                 UYTrec[[2]][UYTrec[[2]]$loc %in% c("L1","L2","L3","L4"),])
 
-                                trainRec$genoNA <- pullSnpGeno(pop = c(PYT, AYT, UYT), simParam = SP)
+                                trainRec$genoNA <- pullSnpGeno(pop = c(CET,PYT, AYT, UYT), simParam = SP)
 
 			} else if(year > (burninYears+1) && year <= nCycles){
                        
                         	# update the training population
-                        	trainRec$phenoNA <- rbind(trainRec$phenoNA,
+                        	trainRec$phenoNA <- rbind(trainRec$phenoNA[-(1:nInd(CET)),],
+				CETrec[[2]],
                         	PYTrec[[2]][PYTrec[[2]]$loc=="L3",],
                         	AYTrec[[2]][AYTrec[[2]]$loc %in% c("L3","L4"),],
                         	UYTrec[[2]][UYTrec[[2]]$loc %in% c("L1","L2","L3","L4"),])
 
-                        	trainRec$genoNA <- rbind(trainRec$genoNA,pullSnpGeno(pop=c(PYT, AYT, UYT),simParam=SP))
+                        	trainRec$genoNA <- rbind(trainRec$genoNA[-(1:nInd(CET)),],
+						pullSnpGeno(pop=c(CET,PYT, AYT, UYT),simParam=SP))
 
 			} # end elseif
 
@@ -75,19 +79,20 @@ gsNarrow  <- function(REP,ME,pvalUYT,locUYT,
 		# Select  new parents in the current year based on gebv for recycling
                 # Use GP model to assign gebv to individuals in the breeding population
 
+		CET@ebv <- as.matrix(modelParms[[1]][CET@id])
                 PYT@ebv <- as.matrix(modelParms[[1]][PYT@id])
                 AYT@ebv <- as.matrix(modelParms[[1]][AYT@id])
                 UYT@ebv <- as.matrix(modelParms[[1]][UYT@id])
 
-		if (any(is.na(PYT@ebv))){
-                        #fileName <- paste0("Missing_PYT_rep", REP, "_year", year, ".rds")
-                        #saveRDS(mget(ls()), fileName)
-                        PYT <- PYT[!is.na(PYT@ebv)] # remove missing value
+		if (any(is.na(CET@ebv))){
+                        fileName <- paste0("Missing_CET_rep", REP, "_year", year, ".rds")
+                        saveRDS(mget(ls()), fileName)
+                        CET <- CET[!is.na(CET@ebv)] # remove missing value
                 }
 
 
                 # constitute parental selection candidate and select based on GEBV for next cycle
-                parSelCand <- c(UYT,AYT,PYT)
+                parSelCand <- c(CET,UYT,AYT,PYT)
 
                 if (any(is.na(parSelCand@ebv))){
                         fileName <- paste0("Missing_parentEBV_rep", REP, "_year", year, ".rds")
@@ -98,20 +103,22 @@ gsNarrow  <- function(REP,ME,pvalUYT,locUYT,
                 parents <- selectInd(pop = parSelCand, nInd = nParents,trait = 1, use = "ebv",simParam = SP)
 
                 # number of individuals constitute parental candidates per trial stage
+		nParCET[year] <- sum(parents@id %in% CET@id)
                 nParPYT[year] <- sum(parents@id %in% PYT@id)
                 nParAYT[year] <- sum(parents@id %in% AYT@id)
                 nParUYT[year] <- sum(parents@id %in% UYT@id)
 
 
 		# Assign GETGV to the population from GP model as surrogates of selection values
-        	#PYT@ebv <- as.matrix(modelParms[[3]][PYT@id])
-        	#AYT@ebv <- as.matrix(modelParms[[3]][AYT@id])
-        	#UYT@ebv <- as.matrix(modelParms[[3]][UYT@id])
+		CET@ebv <- as.matrix(modelParms[[3]][CET@id])
+        	PYT@ebv <- as.matrix(modelParms[[3]][PYT@id])
+        	AYT@ebv <- as.matrix(modelParms[[3]][AYT@id])
+        	UYT@ebv <- as.matrix(modelParms[[3]][UYT@id])
 
 
 		# assign p-value as environmental covariate to each location
   		for (loc in 1:9){
-       			allLocPvals[loc] <- runif(1, pvalRange[loc, 1], pvalRange[loc, 2])
+       			allLocPvals[loc] <- pnorm(runif(1, eCovRange[loc,1], eCovRange[loc, 2]))
   		}
  
 		# Selecting from UYT lines based on GETGV for variety for release and its accuracy
@@ -144,7 +151,7 @@ gsNarrow  <- function(REP,ME,pvalUYT,locUYT,
 
 		# Preliminary Yield Trial (PYT) - use GETGV to select the best CET lines to  PYT
         	accCET[year] <- cor(gvADG(CET,pval), pheno(CET))
-    		PYT <- selectInd(pop = CET, nInd = nPYT, trait = 1, use = "pheno", simParam=SP)   
+    		PYT <- selectInd(pop = CET, nInd = nPYT, trait = 1, use = "ebv", simParam=SP)   
     		PYTrec <- gxeSim(pvalVec = pvalPYT, pop = PYT,
                    	varE = errVarPYT,nreps = repPYT,locID = locPYT,year=year)
   
@@ -171,9 +178,10 @@ gsNarrow  <- function(REP,ME,pvalUYT,locUYT,
         	F1 <- randCross(pop = parents, nCrosses = 100, nProgeny = nProgeny,simParam = SP)
 
     		# save mean and genetic variance to track progress of breeding program
-		meanGV[year] <- meanG(PYT)
-		varGV[year] <- varG_ADG(PYT,pval)
-
+	
+		meanGV[year] <- mean(gvADG(CET, pval))
+		varGV[year] <- varG_ADG(CET,pval)
+		
 		# heritability estimates
         	h2[year] <- modelParms[[2]] # Narrow-sense heritability
         	H2[year] <- modelParms[[4]] # broad-sense heritability
@@ -196,10 +204,10 @@ gsNarrow  <- function(REP,ME,pvalUYT,locUYT,
          	accAYT=accAYT,
          	accUYT=accUYT,
 
+		nParCET=nParCET,
          	nParPYT=nParPYT,
  		nParAYT=nParAYT,
          	nParUYT=nParUYT)
 
    	return(simParms)
-
 } # end gsNarrow function

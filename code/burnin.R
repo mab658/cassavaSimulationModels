@@ -29,22 +29,29 @@ meanGV <- vector("numeric",length=nCycles)
 varGV <- vector("numeric",length=nCycles)
 
 h2 <- H2 <- vector("numeric",length=nCycles)
+ebv <- egv <- vector("numeric",length=nCycles)
 
 # placeholder for selection accuracy at each stage
-accCET <- accPYT <- accAYT <- accUYT <- vector("numeric",length=nCycles)
+accSDN <- accCET <- accPYT <- accAYT <- accUYT <- vector("numeric",length=nCycles)
 
 
 # pipeline  to avoid copying data
 
 # track number of individuals selected as parent in each trial stage per year
-nParPYT <- nParAYT <- nParUYT <- vector("numeric",length=nCycles)
+nParCET <- nParPYT <- nParAYT <- nParUYT <- vector("numeric",length=nCycles)
 
 
 # create a placeholder to store p-value range to denote environmental covariate of GxE  for each location
 allLocPvals <- numeric(9)
-pvalRange <- as.data.frame(matrix(c(0.1, 0.5, 0.15, 0.55, 0.2, 0.6, 0.2, 0.6,
-                          0.3, 0.7, 0.4, 0.8, 0.4, 0.8, 0.45, 0.85, 0.5, 0.9),
-                          ncol=2,byrow = TRUE))
+#pvalRange <- as.data.frame(matrix(c(0.1, 0.5, 0.15, 0.55, 0.2, 0.6, 0.2, 0.6,
+#                          0.3, 0.7, 0.4, 0.8, 0.4, 0.8, 0.45, 0.85, 0.5, 0.9),
+#                          ncol=2,byrow = TRUE))
+
+
+eCovRange <- as.data.frame(matrix(c(-1.9, -0.7,-0.9,0.3,-0.9,0.3,-0.8,0.4,-0.6,0.6,-0.3,0.9,
+				0.0,1.2,0.1,1.3,0.9,2.1),
+				ncol=2,byrow = TRUE))
+
 
 
 # Run 10 years of burn-in (Cycle years) as a common starting point
@@ -64,9 +71,10 @@ for(year in 1:burninYears){#Change to any number of desired years
 
         parents <- selectInd(pop = c(UYT,AYT), nInd=nParents, trait = 1,use="pheno",simParam=SP)
 
-  	# Assign p-value to each location in a cycle year
+  	# randomly sample from environmental covariate and convert to p-value 
+	# to be assigned to each location in a cycle year
   	for (loc in 1:9){
-       		allLocPvals[loc] <- runif(1, pvalRange[loc, 1], pvalRange[loc, 2])
+       		allLocPvals[loc] <- pnorm(runif(1, eCovRange[loc,1], eCovRange[loc,2]))
   	}
 
   	# Select variety to be released

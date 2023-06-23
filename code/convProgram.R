@@ -13,22 +13,31 @@ baseMod <- function(REP){
   		cat("\n Advance breeding with conventional breeding strategy year:",year,"of", burninYears+futureYears,"\n")
 
 		# pool the data from PYT, AYT, and UYT for heritability estimate
-		gxeDat <- rbind(PYTrec[[2]],AYTrec[[2]],UYTrec[[2]])
+
+		if(year == (burninYears+1)){
+
+                        # phenotyping indvs from PYT, AYT, and UYT TP
+                        gxeDat  <- rbind(PYTrec[[2]], AYTrec[[2]],UYTrec[[2]])
+                } else if(year > (burninYears+1) && year <= nCycles){
+
+                        # update TP
+                        gxeDat <- rbind(gxeDat,PYTrec[[2]],AYTrec[[2]],UYTrec[[2]])
+
+                } # end else if
 
 	
 		#  recycle parents each year for crossing block
                 parents <- selectInd(pop=c(UYT,AYT),nInd=nParents, use="pheno",simParam=SP)
 
                 # number of trials by stages in the parental candidate
+		nParCET[year] <- NA
                 nParPYT[year] <- NA
                 nParAYT[year] <- sum(parents@id %in% AYT@id)
                 nParUYT[year] <- sum(parents@id %in% UYT@id)
 
-
-
   		# Assign p-value to each location in a cycle year
   		for (loc in 1:9){
-       			allLocPvals[loc] <- runif(1, pvalRange[loc, 1], pvalRange[loc, 2])
+       			allLocPvals[loc] <- pnorm(runif(1, eCovRange[loc,1], eCovRange[loc,2]))
   		}
 
 		# select variety for release
@@ -67,7 +76,9 @@ baseMod <- function(REP){
   		PYT <- PYTrec[[1]]
 
 		# Clonal Evaluation Trial (CET)
+		accSDN[year] <-  cor(gv(SDN), pheno(SDN))
   		CET <- selectWithinFam(pop = SDN, nInd = famSize, trait = 1, use = "pheno", simParam=SP)
+
   		#Invoke the function to phenotype selected SDNclones in 1 locations
   		CETrec <- gxeSim(pvalVec=allLocPvals[5], pop = CET,
                    	varE = errVarCET,nreps = repCET,locID = 5,year=year)
@@ -88,11 +99,11 @@ baseMod <- function(REP){
 
   
   		# save mean & variance of genetic values to track progress of breeding programs
-		meanGV[year] <- meanG(PYT)
-                varGV[year] <- varG(PYT)
-	
+		meanGV[year] <- meanG(CET)
+                varGV[year] <- varG(CET)
+
 		h2[year] <- NA # narrow-sense heritability not estimable
-                H2[year] <- varModel(METdat = gxeDat) # broad-sense heritability at UYT  
+                H2[year] <- varModel(METdat = gxeDat) # broad-sense heritability  
 	} # end loop
 
 	# put the simulated parameters as a data frame object
@@ -105,11 +116,13 @@ baseMod <- function(REP){
 		h2=h2,
 	       	H2=H2,
 
+		accSDN=accSDN,
                	accCET=accCET,
                	accPYT=accPYT,
                	accAYT=accAYT,
                	accUYT=accUYT,
 
+		nParCET=nParCET,
                	nParPYT=nParPYT,
                	nParAYT=nParAYT,
                	nParUYT=nParUYT)
